@@ -1,0 +1,3802 @@
+#Pangenome Chapter Spew File 
+
+######### 05.09.2025 ############
+
+#working on developing the data mining script to pull all mitogenomes from ncbi/refseq if available, in other taxa id file, used the order, class, and family level of SO marine megafauna, below is genus level to include later if wanted 
+#Whales and Dolphins#
+9732 #Orcinus orca
+48743 #Hyperoodon
+9766 #Balaenoptera
+9729 #Globicephala
+9753 #Physeter
+9772 #Megaptera
+48741 #Berardius
+27609 #Lagenorhynchus 
+9741 #Phocoena 
+
+#Penguins#
+9232 #Aptenodytes
+9237 #Pygoscelis
+9235 #Eudyptes
+
+#Seal# 
+#Arctocephalus 
+#Ommataphoca 
+#Lobodan carcinophaga
+#Hydrurga leptonyx
+#Mirounga leonina
+#Leptonychotes weddellii
+
+################### 07.09.2025 #############################
+#finally doing the last bit of downloading to try and get vgan, euka, and soibean running. 
+mkdir -p $HOME/vgan/euka_dir/
+mkdir -p $HOME/vgan/hcfiles/
+mkdir -p $HOME/vgan/soibean_dir/
+mkdir -p $HOME/vgan/damageProfiles/
+mkdir -p $HOME/vgan/plottingScripts/
+
+
+# Euka
+cd $HOME/vgan/euka_dir/
+wget -nc -l1 --recursive --no-parent -P $HOME/vgan/euka_dir/ ftp://ftp.healthtech.dtu.dk:/public/euka_files/
+wget -O $HOME/vgan/damageProfiles/none.prof https://raw.githubusercontent.com/grenaud/vgan/main/share/vgan/damageProfiles/none.prof
+
+
+
+# SoiBean
+cd $HOME/vgan/soibean_dir/
+wget -nc --recursive --no-parent -P $HOME/vgan/soibean_dir/ ftp://ftp.healthtech.dtu.dk:/public/soibean_files/
+wget -O $HOME/vgan/damageProfiles/none.prof https://raw.githubusercontent.com/grenaud/vgan/main/share/vgan/damageProfiles/none.prof
+
+cd $HOME/vgan/soibean_dir/tree_dir/
+unzip tree.zip
+
+wget -O $HOME/vgan/soibean_dir/make_graph_files.sh https://raw.githubusercontent.com/grenaud/vgan/main/share/vgan/soibean_dir/make_graph_files.sh
+chmod +x $HOME/vgan/soibean_dir/make_graph_files.sh
+wget -O $HOME/vgan/plottingScripts/soibeanPlotTrace.R https://raw.githubusercontent.com/grenaud/vgan/main/share/vgan/plottingScripts/soibeanPlotTrace.R
+wget -O $HOME/vgan/plottingScripts/soibeanPlots.R https://raw.githubusercontent.com/grenaud/vgan/main/share/vgan/plottingScripts/soibeanPlots.R
+wget -O $HOME/vgan/plottingScripts/soibeanPlotk.R https://raw.githubusercontent.com/grenaud/vgan/main/share/vgan/plottingScripts/soibeanPlotk.R
+wget -O $HOME/vgan/plottingScripts/soibean.yml https://raw.githubusercontent.com/grenaud/vgan/main/share/vgan/plottingScripts/soibean.yml
+
+
+######## did not do this bit, but might need to? 
+# HaploCart
+cd $HOME/vgan/hcfiles/
+wget http://www.grenaud.net/haplocart/haplocart_latest.tar.gz
+tar -xvzf haplocart_latest.tar.gz
+
+## NOTE: I followed the bioconda downloads and instructions for this, but did not try the quickstart, or double check that "vg" was downloaded. This will be a good test before thursday evening. 
+
+
+######################## 08.09.2025 ############################
+#starting to work on wrapper script to call mitogenome data mining script. put in notes and download locally
+#!/usr/bin/bash -l
+#PBS -N mito_mining_test_penguin 
+#PBS -M emily.davis@utas.edu.au
+# Send mail for (a)borted, (b)eginning and (e)nd job
+#PBS -m abe
+# Select 1 nodes with 28 cpus per node
+#PBS -l select=1:ncpus=28
+# Allow the job to run for up to 24 hours
+#PBS -l walltime=24:00:00
+# force the job to a specific queue
+####PBS -q [destination queue]
+
+## BEGIN SCRIPT
+
+#go to correct environment 
+module load Anaconda3/2024.02-1
+source activate mito_mining
+
+#defining variables
+DIR="u/davisee/mito_mining"
+ID="u/davisee/mito_mining/taxa_ids_test.txt"
+
+#running script
+cd $DIR
+./get_mito_metrics.sh $ID --compress --kmer 4
+
+module purge
+
+#END OF SCRIPT
+
+### file structure created ### 
+
+/u/davisee/mito_mining 
+--> scripts 
+--> taxa_id files
+--> results_mit_run (created during script run) ## currently only have test version
+
+#Errors when running the get_mito_metrics_full.sh currently that i need to resolve: 
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "C.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "C.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "C.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+
+
+
+######### note --> previous text file did not work because I added comments to it that the script did not like. 
+#Correct local version to try again when mobaXterm and rosalind aren't being goofy 
+/.../chapter2/scripts/taxa_ids_clean.txt 
+
+# created to address this error: 
+>>> Conda binary: /share/apps/software/Anaconda3/2024.02-1/bin/conda
+>>> Active env: /u/davisee/miniconda2/envs/mito_mining
+>>> Exporting current environment to mito_mining_env_20250908.yaml
+>>> Checking files...
+>>> Running mito metrics pipeline
+>>> Processing Taxon ID: #Whales and Dolphins#
+Downloading mitochondrial genomes for #Whales and Dolphins#...
+Warning: No mitochondrial genomes found for TaxID #Whales and Dolphins#
+>>> Pipeline finished. Combined metrics: mito_metrics_output/combined_metrics.tsv
+>>> Checking for taxa with no mitochondrial genomes...
+WARNING: No mitochondrial genomes found for TaxID #Whales and Dolphins#
+WARNING: No mitochondrial genomes found for TaxID 9721 #Cetacea
+WARNING: No mitochondrial genomes found for TaxID 9722 #Odontoceti
+WARNING: No mitochondrial genomes found for TaxID 9761 #Mysticeti
+WARNING: No mitochondrial genomes found for TaxID 9765 #Balaenopteridae
+WARNING: No mitochondrial genomes found for TaxID 9726 #Delphinidae
+WARNING: No mitochondrial genomes found for TaxID 9756 #Ziphiidae
+WARNING: No mitochondrial genomes found for TaxID #Seals#
+WARNING: No mitochondrial genomes found for TaxID 3072905 #Pinnipedia
+WARNING: No mitochondrial genomes found for TaxID 9702 #Otariidae
+WARNING: No mitochondrial genomes found for TaxID 9709 #Phocidae
+WARNING: No mitochondrial genomes found for TaxID #Penguins#
+WARNING: No mitochondrial genomes found for TaxID 3073812 #Aequornithes
+WARNING: No mitochondrial genomes found for TaxID 9230 #Sphenisciformes
+WARNING: No mitochondrial genomes found for TaxID 9231 #Spheniscidae
+WARNING: No mitochondrial genomes found for TaxID #Fish#
+WARNING: No mitochondrial genomes found for TaxID 8205 #Notothenioidei
+WARNING: No mitochondrial genomes found for TaxID 8206 #Nototheniidae
+WARNING: No mitochondrial genomes found for TaxID 36206 #Artedidraconidae
+WARNING: No mitochondrial genomes found for TaxID 8214 #Bathydraconidae
+WARNING: No mitochondrial genomes found for TaxID 36203 #Bovichtidae
+WARNING: No mitochondrial genomes found for TaxID 30806 #Channichthyidae
+WARNING: No mitochondrial genomes found for TaxID 43254 #Harpagiferidae
+>>> Job finished at Mon Sep  8 15:14:37 AEST 2025
+
+## could also try as a test --> instead of just Aptenodytes forsteri (emperor penguin), run taxaid for Apentenodytes (genus)
+
+####################### 09.09.2025 ##########################################
+#re-ran the script on the clean taxa log, and got this log result: 
+>>> Conda binary: /share/apps/software/Anaconda3/2024.02-1/condabin/conda
+>>> Active env: /u/davisee/miniconda2/envs/mito_mining
+>>> Exporting current environment to mito_mining_env_20250908.yaml
+>>> Checking files...
+>>> Running mito metrics pipeline
+>>> Processing Taxon ID: 9721
+Downloading mitochondrial genomes for 9721...
+>>> Pipeline finished. Combined metrics: mito_metrics_output/combined_metrics.tsv
+>>> Checking for taxa with no mitochondrial genomes...
+WARNING: No mitochondrial genomes found for TaxID 9722
+WARNING: No mitochondrial genomes found for TaxID 9761
+WARNING: No mitochondrial genomes found for TaxID 9756
+WARNING: No mitochondrial genomes found for TaxID 9726
+WARNING: No mitochondrial genomes found for TaxID 9756
+WARNING: No mitochondrial genomes found for TaxID 3072905
+WARNING: No mitochondrial genomes found for TaxID 9702
+WARNING: No mitochondrial genomes found for TaxID 9709
+WARNING: No mitochondrial genomes found for TaxID 3073812
+WARNING: No mitochondrial genomes found for TaxID 9230
+WARNING: No mitochondrial genomes found for TaxID 9231
+WARNING: No mitochondrial genomes found for TaxID 8205
+WARNING: No mitochondrial genomes found for TaxID 8206
+WARNING: No mitochondrial genomes found for TaxID 36206
+WARNING: No mitochondrial genomes found for TaxID 8214
+WARNING: No mitochondrial genomes found for TaxID 36203
+WARNING: No mitochondrial genomes found for TaxID 30806
+WARNING: No mitochondrial genomes found for TaxID 43254
+
+# so checking results, it did work for cetacea in general, but did not work for the lower subgroups for some reason. would be good to double check
+	#there is errors with ncbi-cli (in the script) the logic doesn't try to look for mitogenomes recursively within nested taxaid (e.g. look in all odontoceti)
+
+#working with chat gpt, a pyhton script will be more flexible, so the workhorse script will be python, and will be changing mito_mining environment to: 
+chat_gpt --> 🐍 New Python get_mito_metrics_full.py
+
+This script will:
+
+Take a file of TaxIDs.
+
+Expand higher-level TaxIDs (family/order) into species-level assemblies using NCBI Datasets and Entrez (Biopython).
+
+Download mitochondrial genomes only.
+
+Merge them per TaxID into one FASTA.
+
+Compute metrics (GC content, GC skew, AT skew, completeness).
+
+Save per-taxon results + a combined CSV.
+
+Optionally compress outputs (--compress).
+
+📦 Dependencies to Add to mito_mining Env
+
+Currently you have:
+✔️ seqkit
+✔️ bioawk
+✔️ entrez-direct
+✔️ wget
+
+You need to add:
+
+conda install -n mito_mining -c conda-forge -c bioconda \
+  biopython \
+  ncbi-datasets-cli \
+  pandas \
+  numpy \
+  matplotlib
+
+Why each one?
+
+biopython → query NCBI taxonomy, parse GenBank/FASTA.
+
+ncbi-datasets-cli → already familiar, reliable genome downloads.
+
+pandas/numpy → handle metrics and tables cleanly.
+
+matplotlib (optional) → future-proof for QC plots (e.g., genome size histograms, GC% distributions).
+
+⚙️ PBS Wrapper Considerations
+
+Right now, your wrapper does:
+
+module load Anaconda3/2024.02-1
+source activate /u/davisee/miniconda2/envs/mito_mining
+
+
+That’s already enough — you don’t need an extra module load python/..., because your conda env brings its own Python (3.13).
+
+But if the HPC admins recommend loading a system Python, the safe generic choice would be:
+
+module load python/3.10.13
+
+
+Then activate your env.
+This ensures compatibility if cluster defaults change.
+
+📊 Future-proofing QC Metrics
+
+Because we’re in Python, adding new metrics is much easier. For example:
+
+N50, L50, genome length distributions → via Bio.SeqIO.
+
+Codon usage bias → Biopython translation tools.
+
+Phylogenetic placement checks → scikit-bio, ete3 (future install).
+
+Visualization → matplotlib/seaborn heatmaps for GC/AT skew across families.
+
+✨ So the structure will be:
+
+get_mito_metrics_full.py → Python pipeline (full replacement of bash).
+
+mito_mining_wrapper.sh → PBS submission wrapper, activates conda, calls Python script.
+
+#having conda difficulties, need to activate path explicitly
+conda info --envs
+conda activate /u/davisee/miniconda2/envs/mito_mining/
+
+#load new dependencies for python script 
+conda install -c conda-forge -c bioconda \
+  biopython \
+  ncbi-datasets-cli \
+  pandas \
+  numpy \
+  matplotlib
+
+
+### the new python script ### 
+./scripts_chapter2/mito_mining/get_mito_metrics_full.py
+
+### new wapper ###
+
+############# 10.09.1995 ###########
+
+#today there was a lot of debugging with mito_mining, had to switch entirely to biopython - entrez script bc the conda version of ncbi-cli-datasets was not updated version
+#>v19, that could handle recursive searching for --organelle mitochondrion, and --search method (<v18.4.) would do a generalised search including TaxaID etc, and therefore would time out. 
+
+#currently python script and .sh wrapper have been running for three hours, but script outputs a .yaml file and will have an ok csv. Will be large so will need to compress it immediately if it stops running so that way Geli doesn't yell at me. 
+
+
+## also gonna try testing my soibean+download to see how it works --> using the quickstart from the /vgan/wiki/soibean
+
+wget https://github.com/grenaud/vgan/raw/main/test/input_files/soibean/k1.fq.gz
+cd $HOME/vgan/share/vgan/soibean_dir/tree_dir
+unzip trees.zip
+./make_graph_files.sh Ursidae
+vgan soibean -fq1 k1.fq.gz --dbprefix Ursidae -t 20
+
+1) navigate to vgan environment I made with the download
+wget https://github.com/grenaud/vgan/raw/main/test/input_files/soibean/k1.fq.gz
+cd $HOME/vgan/share/vgan/soibean_dir/tree_dir
+unzip trees.zip
+./make_graph_files.sh Ursidae
+vgan soibean -fq1 k1.fq.gz --dbprefix Ursidae -t 20
+
+
+### having some file management issues with soibean, needed to create a symlink in my env/vgan/share/vgan with master: 
+Perfect — you’re in:
+
+```
+/u/davisee/miniconda2/envs/vgan/share/vgan
+```
+
+Currently it has only:
+
+```
+damageProfiles  hcfiles
+```
+
+This means **soibean\_dir is not yet linked**. Right now, `vgan` will still fail to find the database because it looks for:
+
+```
+share/vgan/soibean_dir/
+```
+
+---
+
+### To fix it, create a symlink to your working soibean directory:
+
+```bash
+ln -s /u/davisee/vgan/soibean_dir soibean_dir
+```
+
+After that, `ls -l` should show:
+
+```
+soibean_dir -> /u/davisee/vgan/soibean_dir
+damageProfiles
+hcfiles
+```
+
+✅ Now `vgan` will see all the soibean database files in the expected location.
+
+Once that’s in place, you can rerun your test:
+
+```bash
+vgan soibean -fq1 /u/davisee/vgan/soibean_dir/soibean_test/k1.fq.gz --dbprefix Ursidae -t 20
+```
+
+without the `libgab.h getFullPath failed` error.
+
+Do you want me to also outline the **expected outputs** from this test run so you know it worked?
+####creating the symlink: 
+# Remove any broken folder first
+rm -rf /u/davisee/miniconda2/envs/vgan/share/vgan/soibean_dir
+
+# Create a symlink pointing to your master DB
+ln -s /u/davisee/share/vgan/soibean_dir /u/davisee/miniconda2/envs/vgan/share/vgan/soibean_dir
+
+
+#re-ran and it started running!
+conda activate vgan
+cd u/davisee/share/vgan/soibean_dir/
+
+vgan soibean -fq1 ~/soibean_test/k1.fq.gz --dbprefix Ursidae -t 20
+
+# after it worked, need to create soibean env to do the visualization. However, need to create symlink again
+
+cd ~
+ln -s /u/davisee/share/vgan/plottingScripts /u/davisee/miniconda2/envs/vgan/share/vgan/plottingScripts
+
+and then: 
+conda env create -f /u/davisee/mini
+conda2/envs/vgan/share/vgan/plottingScripts/soibean.yml/
+
+########for python script , changed to do smaller taxa chunks because its running so long now (because of conservative adjustments and recursive looking)
+
+
+############ 12.09.2025 ######################
+
+#checking the run for penguins, two things need to be adjusted
+(1) after merging and compression, all .fna files are kept (clogging directory)
+(2) entrez-direct search bar loose, so grabbed all mitochondrial sequences that exist (genes + genomes)
+(3) going to fix compression by only keeping a merged file with all queried sequences for script
+(4) create new RefSeq_mitomining that will have more stringent search guidlines, as having the other script could be useful later, and also adapted to search for nuclear and other data. 
+ 
+ #these scripts worked! yahoo! however, it might be good to expand searches to look at but mito and nuclear, and might need to adjust the scripts again. 
+
+ ############# 15. 09.2025 ############
+
+ (1) ran full taxa_ids.txt with the refseq files. The log file is especially useful to go through, 
+ /u/davisee/Scratch/scripts_chapter2/mito_mining_python_refseq.all.o1221539 
+
+ #for most stringent, refseq mitochondrial genomes : 
+ Taxid 
+
+
+############################### 02.10.2025 ########################################
+
+bc I have download kraken2+, I can build GTDB on server without doing local file changes. Will put the database in the /share/database folder
+#made a dedicated kraken2 conda environment, was super quick
+
+#I though the extra flag would be useful for downstream analyses, but going to make two versions to make sure it works? 
+k2 build --db gtdb_db --special gtdb --threads 32 --gtdb-use-ncbi-taxonomy --gtdb-files
+
+### to do above, I need to download the gtdb genomes to the thing so that way it can make the ncbi-taxonomy structure. 
+#using the latest version, and need to get a tarball with all of the genomes (it will be a lot!)
+
+wget https://data.ace.uq.edu.au/public/gtdb/data/releases/release226/226.0/genomic_files_reps/gtdb_genomes_reps_r226.tar.gz 
+#this will take awhile, so will switch over to running prank msa for vish 
+
+#then will unpack
+tar -xvzf gtdb_genomes_reps_R220.tar.gz 
+#---> Note: butterfingers did ctrl+a D// so have to start over! will do building tonight or friday morning :((((
+
+## building kraken database
+k2 build --db gtdb_db_r226 --special gtdb --threads 32 --gtdb-use-ncbi-taxonomy --gtdb-files path/to/extracted_folder/**/*.fna.gz
+
+
+  ### Vish mitogenome reference mining + MSA generation with PRANK/PAGAN 
+
+  Based on a meetng, I ran a refseq on following species and larger groups --> all target species had one refseq mitogenome, but larger groups had more. Createing MSA with prank for Lobodontini (3 genomes), Balaenopteridae (9 genomes), Pygoscelid (3 genomes) 
+
+3410120	Lobodontini 
+101849	crabeater_seal	
+9765	balaenopteridae ---> only difference to balea genus is the inclusion of humpback whale 9773, so this is better one
+9766	Balaenoptera
+9771	blue_whale
+9770	fin_whale
+9773	humpback_whale
+33556	minke_whale
+9237 pygosclid
+9238	adelie_penguin
+79643	chinstap_penguin
+
+#results per larger file are a compressed .fna file, which is the input needed for prank alignment. It is phylo aware, but don't need to input phylo by default. 
+
+#Q:what is the difference between a Multi-Sequence Alignment (MSA) and a consensus sequence? 
+
+#notes: .fna is a type of fasta file that is meant to denota that it contains nucleotide sequences. 
+
+#building the script for running msa files, will run it as a jobscript! 
+## jobscript --> MSA_prank_test.sh
+
+# ERROR work : 
+Warning: sequence names changed.
+Sequences don't seem to be aligned. Exiting.
+…happens because PRANK modifies headers internally, and if the headers are “too complicated” it sometimes refuses to continue.
+		#to fix, need to fix headers in fasta files --> replace all spaces and characters with "_"
+		sed 's/^>\(.*\)/>\1/; s/[^A-Za-z0-9_>]/_/g' 3410120_mitogenomes.fna > 3410120_mitogenomes_clean.fna
+			----> do the same for the other ones, and then change  MSA_prank_test.sh with 
+			line 34 	INPUT=$(ls "$DIR"/*.fna) -->  line 34 	INPUT=$(ls "$DIR"/*_clean.fna)
+
+# ERROR work : 
+>>> Running prank alignments, verbose 10 iterations
+
+-----------------
+ PRANK v.170427:
+-----------------
+
+Input for the analysis
+ - aligning sequences in '/u/davisee/Scratch/mito_mining/mito_refseq_all_vish_mitogenomes/3410120_lobontini//3410120_mitogenomes.fna'
+ - using inferred alignment guide tree
+ - option '+F' is not used; it can be enabled with '+F'
+
+Warning: sequence names changed.
+
+Sequences don't seem to be aligned. Exiting.
+...happens were the structure of the fasta file itself has something wrong, need to check if it has weird characters in in, like when there is CLRF endings (^M and stuff ---> the stupid endings)
+
+---> some other things that could be causing issues with PRANK: 
+			Ah, perfect — that explains a lot.
+
+			Since your .fna has only three sequences with lengths ~16.6 kb each, the “Sequences don’t seem to be aligned” message is mostly PRANK being cautious:
+
+			With very few sequences, PRANK sometimes refuses to align if it thinks there isn’t enough information to infer a meaningful alignment guide tree.
+
+			Full-length mitogenomes (~16.5 kb) are fine, but with only three sequences, the default behavior can be overly strict.
+
+			By adding +F and increasing -iterate to 25, you have already done the right thing:
+
+			+F forces PRANK to consider insertions even if sequences diverge.
+
+			-iterate 25 gives it more chances to improve the alignment.
+
+			Additional tips for very small sets of sequences
+
+			You can also try -codon if these are coding sequences (mitogenomes), which sometimes improves alignment accuracy.
+
+			Make sure the headers remain unique and clean (you’ve already fixed that).
+
+			PRANK should now succeed, but expect it to be quick with only three sequences, so don’t worry if it finishes fast.
+
+						2️ Use -codon (if sequences are coding)
+
+						If these are mitogenomes, PRANK can align codons instead of nucleotides:
+
+						prank -d=... -o=... -showanc -njtree -iterate=25 -verbose +F -codon
+
+
+						Helps with long coding sequences.
+
+					#ERROR : codon sequence length is not multiple of three!
+
+					Bc of this, need to take on -codon flag, caused a fatal error, but it did start running! therefor did: 
+					-iterate=50 and delted -codon
+			#this worked --> created an MSA for samples. will now be running ---> got all three MSA runs needed
+
+########################### 03.10.2025 #############################################
+(1) Vish side project: said that they only need the single species mitogenomes, so that's what I sent, but made all of the msa from PRANK. 
+				(a) I can try to work through what is needed to make a consensus sequence, have the options to try it with either python or with R Bioconductor. Might try to do python first because this will be good to know how to do it, and have it ready for tuesday when this comes up. 
+							(i) example code to build on: 
+										    from Bio import AlignIO
+										    from Bio.Align.AlignInfo import SummaryInfo
+
+										    # Load the PRANK output alignment
+										    alignment = AlignIO.read("output_alignment.best.fas", "fasta")
+
+										    # Create a SummaryInfo object
+										    summary_info = SummaryInfo(alignment)
+
+										    # Generate the consensus sequence
+										    consensus_sequence = summary_info.consensus()
+										    print(consensus_sequence)
+
+				(b) R Bioconductor
+
+(2) GTDB screen broke last night, so I need to do the tar step again today :( 
+				(a) create screen -R gtdb to do the tar step, and hope it finishes before the end of day. If it does can do
+				(b) k2 build step ---> might be best to do this as a job, because the screen might break again? 
+
+###################### 6.10.2025 ####################################
+ran into issues with GTDB download structure for trying to do k2 build. Basically downloaded and use structure found here : https://data.ace.uq.edu.au/public/gtdb/data/releases/release226/226.0/
+
+###################### 7.10.2025 ##################################
+
+(1) to calculate average genome coverage for first chapter, creating a python script to do in mito_mining env to extract taxid from accession list, and then will run though mito_mining script to pull any refseq mitogenomes and calculate the average mitogenome length from the csv output. 
+	(a) list of accession ids, there will be two species that double up.  
+MW829388
+ON891147
+OK493634
+OK493720
+ON000293
+OL339430
+ON891164
+ON891170
+EF609319
+OK493624
+EU525303
+EU525299
+FJ582589
+EU525471
+MK261839
+FJ582593
+MG739962
+MG740185
+EU525360
+MK262211
+KP875235
+AF518190
+
+(b)
+ChatGPT said:
+
+Perfect 👍 — here’s your updated Python script that:
+
+Reads accession numbers from a text file
+
+Fetches the corresponding TaxIDs using Biopython’s Entrez
+
+Removes duplicates (using set() for uniqueness)
+
+Writes a text file containing only unique TaxIDs (no header)
+
+from Bio import Entrez
+from time import sleep
+
+# Set your email (required by NCBI)
+Entrez.email = "your.email@domain.com"
+
+# Input and output files
+input_file = "accessions.txt"
+output_file = "taxids.txt"
+
+# Read accession numbers
+with open(input_file) as f:
+    accessions = [line.strip() for line in f if line.strip()]
+
+taxids = []
+
+for acc in accessions:
+    try:
+        # Fetch summary information
+        handle = Entrez.esummary(db="nucleotide", id=acc)
+        record = Entrez.read(handle)
+        handle.close()
+
+        # Extract TaxID
+        taxid = record[0]["TaxId"]
+        taxids.append(taxid)
+
+        print(f"{acc} → TaxID {taxid}")
+
+        # Be polite to NCBI
+        sleep(0.4)
+
+    except Exception as e:
+        print(f"Error fetching {acc}: {e}")
+        sleep(1)
+
+# --- Remove duplicate TaxIDs ---
+unique_taxids = sorted(set(taxids))
+
+# --- Write out only unique TaxIDs (no header) ---
+with open(output_file, "w") as f:
+    for tid in unique_taxids:
+        f.write(f"{tid}\n")
+
+print(f"Done! Wrote {len(unique_taxids)} unique TaxIDs to {output_file}.")
+
+✅ Notes
+
+Replace "your.email@domain.com" with your real email — NCBI requires this.
+
+The script uses sorted(set(taxids)) to ensure no duplicates and a clean, ordered output.
+
+It pauses between requests with sleep(0.4) to respect NCBI rate limits (max ~3 requests/sec).
+
+Would you like it to also handle cases where some accessions aren’t found (e.g., log missing IDs to a separate file)?
+
+################################## 21.10.2025 ###################################
+I have been working on stats for my ch.1 manuscript for a bit, and I think I'm hitting the threshold of time wasting with it. 
+
+@Advisor meeting: Jane suggested starting with (1) Collaps Core then (2) IODP Exp. 382 core. 
+
+Have access to five different sampling areas that circumnavigate Antarctic continent, but are have little overlapping ages, some might be terrestrial (?), but have to start somewhere. What i need to do for files is: 
+
+Methods FlowChart Chapter 2
+
+(1) scp each of the files to /u/davisee/
+(2) check md5sum.tar file that everything copied over correctly (check txt notes from Linda)
+(3) check there is adapter_list.txt and barcodes.txt associated to each -scp directory, NECESSARY
+(4) decompress JUST .tar files, and check out what files are in there
+(5) create AdapterRemoval_demux_nocollapse & Adapterromval_demux_collapse directories
+(6) edit the two scripts for AdapterRemoval_demux_nocollapse & Adapterromval_demux_collapse
+(7) begin running adapter_demux_nocollapse ---> nf_core/eager input 
+(8) begin running adapter_demux_collapse -----> needed for data repositories
+(9) compress .tar files? and compress files not needed
+(10) scp samples direcotories with 2 directories  into /ancient/share/raw data
+(11) rm raw samples + adapterremoval_demux_collapse files from /u/davisee/  **** RUN fastqc/multiqc
+(11.5) run fastp or komplexity:bbtools and then fastqc/multiqc
+(12) create gtdb nf-core/eager kraken2 gtdb script
+(13) check nf-core eager .config files
+(14) beginning processing samples  **** RUN fastqc/multiqc ---> what is left in files?
+(15) Gather all Refseq + Mitochondrial NCBI data for Southern Ocean Vertebrate Groups
+(16) Run Mikkel scripts to quality check the database 
+(17) split mega-database into chunks (check in with Prashasti about this)
+(17) create bwa // bowtie index 
+(18) Create script to run bwa alingments -----> Check what is is files, check in with Nicola
+(19) Convert alginments to be viewable in MEGAN?
+(20) Run MapDamage on all samples (try to keep in line with soibean-harvest)
+(21) Gather mitogenomes for any candidate groups found in samples
+(22) Create new pangenomes for order --> family ---> genus? 
+(23) work with nicola to incorporate new pangenomes into soibean-harvest
+(24) run soibean-harvest on relavant samples + damage analysis
+(25) interpret stuff, and hopefully get some finer resolution results through time.
+
+
+
+######################### 28.10.2025 #####################
+
+There is a possibility that I have been downloading the wrong file, so need to start again with : 
+
+
+## also need to get ncbi-taxonomy structure before I try to build 
+
+
+#get ncbi taxonomy
+
+k2 download-taxonomy --db $DB_BASE --gtdb-use-ncbi-taxonomy
+
+### add variable to path for gtdb directoy: 
+echo 'export GTDBTK_DATA_PATH="/home/youruser/gtdbtk_data/release226"' >> ~/.bashrc
+source ~/.bashrc
+
+
+
+########### 04.11. 2025 ############################
+(1) got an excel sheet from linda meeting today explaining the samples I have and which to use, IODP is ready to go w/ eager test, need to remove adapters/ demux the rest
+(2) creating a new nextflow2025.config, which has information for kraken2 and location for new nf-core/eager:2.5.3 version, as the share/apptainer on the ancient server is an older version of eager. 
+(3) to try and get the new image version, was recommended against using conda, so doing:
+		`qsub -I #start interactive job
+		
+		module load rosalind/1.0
+		module load java/jdk-18.0.2
+		module load apptainer/ApptainerSigularityAlias 
+		module load nextflow/22.04.5 # loading necessary modules based on rosalind_EAGER_apptainer_LindaSimple.sh
+
+		apptainer build --sandbox eager_2.5.3.img docker://nfcore/eager:2.5.3 #using this code to try and get a new sandbox 
+		INFO:    Starting build...` 
+
+--- should have run this in a screen, will see if it times out or not :(
+
+nextflow run nf-core/eager -profile test,<docker/singularity/podman/shifter/charliecloud/conda/institute>
+
+
+--- that worked, so I created a test eager script to run  rosalind_EAGER_apptainer_elisa_test_GRch38_k2GTDB.sh --> version is saved locally. (I'm nervous, but I'm gonna try to get it to run)
+Version: 
+cat rosalind_EAGER_apptainer_elisa_test_GRch38_k2GTDB.sh
+#!/usr/bin/bash -l
+#PBS -N rosalind_EAGER_apptainer_IODP_test
+#PBS -M emily.davis@utas.edu.au
+# Send mail for (a)borted, (b)eginning and (e)nd job
+#PBS -m abe
+# Select 2 nodes with 28 cpus per node
+#PBS -l select=2:ncpus=28
+# Allow the job to run for up to 24 hours
+#PBS -l walltime=72:00:00
+# force the job to a specific queue
+####PBS -q [destination queue]
+
+## Before running EAGER do manually in terminal: nextflow pull nf-core/eager -r 2.5.3
+
+## BEGIN SCRIPT
+                module load rosalind/1.0
+                module load java/jdk-18.0.2
+                module load apptainer/ApptainerSigularityAlias
+                module load nextflow/22.04.5
+##Run EAGER
+
+cd /u/davisee/chapter2_data/Elisa_Prashasti_shotgun_Antarctica_reanalysis_2025/eager_humanref_kraken2gtdb
+
+
+
+#If using newest version of nextflow installed in my directory (works well)
+#/u/davisee/nextflow run nf-core/eager \
+
+#If using nfcore EAGER link
+#nextflow pull nf-core/eager -r 2.5.3 \
+nextflow run nf-core/eager \
+-r 2.5.3 \
+-profile singularity \
+-c /u/davisee/scripts_chapter2/IMAS_Nextflow_2025.config \
+--input '/u/davisee/chapter2_data/Elisa_Prashasti_shotgun_Antarctica_reanalysis_2025/20210706_Exp382_Deep_demux_noncollapsed/*.pair{1,2}.truncated' \
+--fasta '/data/imas_projects/ancient/share/Databases/HumanRefGenome_GRCh38_latest_genomic.fasta' \
+--bwa_index '/data/imas_projects/ancient/share/Indices_bwa/HumanRefGenomeGRCh38/' \
+--bt2_index /
+--fasta_index '/data/imas_projects/ancient/share/Indices_samtools/HumanRefGenome_GRCh38_latest_genomic.fasta.fai' \
+--seq_dict '/data/imas_projects/ancient/share/Indices_picardSeqID/HumanRefGenome_GRCh38_latest_genomic.dict' \
+--damage_calculation_tool mapdamage
+--bam_unmapped_type fastq \
+--run_metagenomic_screening \
+--metagenomic_tool kraken2 \
+--database '/data/imas_projects/ancient/share/Indices_malt/data/imas_projects/ancient/share/Databases/GTDBr226_k2_ncbitaxonomy/' \
+--outdir './results_20210706_Exp382_noncollapsed/' \
+-w './work/' \
+
+date
+
+echo ">>> finished eager run."
+echo ">>> You can clean up temporary work files with:"
+echo "nextflow clean -f -k"
+
+module purge
+
+
+
+#END OF SCRIPT
+
+###################################  
+
+Did this to make shared folders viewable within my 2.5.3 container I made: 
+apptainer exec --bind /data/imas_projects/ancient/share /u/davisee/eager_2.5.3 ls /data/imas_projects/ancient/share/Databases/
+ -----> nf-core/eager error. It will not accept input files that don't have accepted endings : ".fq" ".fastq", not version made with linda adapaterremoval_nodemux, which is ".truncated" even though they are .fq files. Annoying, but it makes sense. 
+
+ # SO! I have to start with adapaterremoval_nodemux step. 
+
+
+ ########################### 10.11.2025 ########################################
+ *goal* tar files, edit adapterremoval_nodemux script, try to get run going
+ ### Currently working with 7 datasets, sample information in "C:\Users\davisee\OneDrive - University of Tasmania\Documents\chapter2\raw data\Chapter2_DataCollection_sampleinformation.xlsx" that Linda made for me 04.11.2025
+
+ ## also got email back from Jeremy Courtin (Hieke Zimmerman's PhD), where he stated that using kraken2 for a filtering step could be a good use, but definitely wouldn't be trustable for publishable final results. 
+
+ ##finally, I really don't want to do this today, which means I should. I think it's the hump of doing the actual big scary thing I need to get done this week. But at least I'm back to more coding! 
+
+
+####Question: does the output of adapterremoval always have .truncated? 
+ Expected Output Files
+
+Because you used --barcode-list, this is a demultiplexing run.
+AdapterRemoval will:
+
+Create one output file set per barcode.
+
+Use the --basename as a prefix.
+
+Append each barcode ID to the output name.
+
+You will typically get files like:
+
+IMAS-Dino.1.pair1.truncated
+IMAS-Dino.1.pair2.truncated
+IMAS-Dino.2.pair1.truncated
+IMAS-Dino.2.pair2.truncated
+...
+IMAS-Dino.settings
+IMAS-Dino.log
+
+
+The numeric suffix (e.g. .1, .2, etc.) corresponds to the order of barcodes in your barcodes_ind6ATGGAGA_dinos.txt.
+
+If your barcode list has barcode identifiers (like sample names) instead of numeric indices, the names might instead look like:
+
+IMAS-Dino_SampleA.pair1.truncated
+IMAS-Dino_SampleA.pair2.truncated
+IMAS-Dino_SampleB.pair1.truncated
+IMAS-Dino_SampleB.pair2.truncated
+
+🧠 Key Notes
+
+If you omit --collapse, AdapterRemoval leaves files unmerged, so you’ll have pair1 and pair2 files (perfect for nf-core/eager input).
+
+If you had used --collapse, it would instead create files like .collapsed.truncated, which nf-core/eager treats differently.
+####Question: what really IS the difference between demultiplexing and adapterremoval?
+
+Demultiplexing vs Adapter Removal
+
+These two processes both happen early in the sequencing data workflow, but they solve different problems.
+
+🔹 Demultiplexing
+
+Goal: Separate mixed reads from different samples into individual files.
+
+When it happens:
+Usually after sequencing, when one sequencing run (lane) contains data from multiple samples that were tagged with short barcode sequences.
+
+Example:
+Suppose you sequenced 3 samples (A, B, C) together. Each fragment got a small barcode:
+
+Sample	Barcode	Example read start
+A	ATGC	ATGCACGTTAGG...
+B	CGTA	CGTATTAGGCTA...
+C	TTAA	TTAACTGATCGA...
+
+After sequencing, all reads are in one file (lane1_R1.fastq.gz and lane1_R2.fastq.gz).
+
+Demultiplexing uses those barcode sequences to split the reads into separate files:
+
+sampleA_R1.fastq.gz
+sampleA_R2.fastq.gz
+sampleB_R1.fastq.gz
+sampleB_R2.fastq.gz
+sampleC_R1.fastq.gz
+sampleC_R2.fastq.gz
+
+🔹 Adapter Removal
+
+Goal: Remove leftover adapter sequences that were used during library prep (to attach DNA fragments to the flow cell).
+
+When it happens:
+After demultiplexing, or if you only have one sample per run (so no demultiplexing was needed).
+
+Adapters show up when your read is longer than your actual DNA fragment.
+Example before trimming:
+
+Read: ACTGCTAGTCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCG
+                         ↓
+Adapter:        AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC
+
+
+Adapter trimming removes that unwanted tail sequence, so downstream alignment only uses true genomic DNA.
+
+🔹 Where AdapterRemoval fits in
+
+AdapterRemoval can do both tasks:
+
+If you provide --barcode-list, it demultiplexes first.
+
+If you provide --adapter-list, it trims adapters.
+
+You can run one or both at once (which is what your script does).
+
+That’s why it’s so popular for ancient DNA data — you can go from raw Illumina reads → clean, demultiplexed, trimmed reads in one command.
+
+####Question: for processing IODP_EXP??
+ (1) testing file type of .truncated with head *.truncated ---> they are not compressed, 
+ (2) changing file name in interactive session on the terminal: 
+
+ for f in *.truncated; do
+    mv "$f" "${f%.truncated}.fastq"
+done
+(3) also created a .sh version to be output after my demultiplexing script, which will safely be re-run and won't skip over already renamed files! 
+	-----> script can also be used in interactive node with 'bash .script_name' if the PBS node requirements are commented/ or taken out. NAME: rosalind_02_renaming_AR_forEAGER_recursive_safe.sh
+####Created new script for adapterremoval ---> just demultiplexing, as nf-core/eager will handle --adapter-list removal and merging. So if there is DOUBLE adapaterremoval, it could be contributing to some of my errors. 
+NAME: rosalind_01_AdapterRemoval_demux_only.sh
+
+CODE: 
+#!/usr/bin/bash -l
+#PBS -N rosalind_AdapterRemoval_just_demux
+#PBS -M emily.davis@utas.edu.au
+# Send mail for (a)borted, (b)eginning and (e)nd job
+#PBS -m abe
+#PBS -l select=1:ncpus=28
+#PBS -l walltime=24:00:00
+# force the job to a specific queue
+####PBS -q [destination queue]
+
+## BEGIN SCRIPT
+cd /u/davisee/chapter2_data/Elisa_Prashasti_shotgun_Antarctica_reanalysis_2025/20210706_IODPExp382_deep_raw
+
+date # Print the current time and date to standard output (so you can see when the job started)
+echo ">>> Job started on: $(hostname)"
+echo ">>> Working directory: $(pwd)"
+echo ">>> PBS job ID: $PBS_JOBID"
+
+module load rosalind/1.0
+module load gcc-env/6.4.0
+module load rosalind adapterremoval komplexity bbtools megan
+
+# Memory and CPU diagnostic block   -----> Chat
+echo ">>> Checking node resources..."
+MEM_TOTAL=$(free -h | awk '/Mem:/ {print $2}')
+MEM_FREE=$(free -h | awk '/Mem:/ {print $7}')
+echo "    Total memory: $MEM_TOTAL"
+echo "    Free memory: $MEM_FREE"
+
+THREADS=16  # <-- You can safely adjust this later to 20–28 if stable
+echo ">>> AdapterRemoval will run using $THREADS threads."
+
+#AdapterRemoval command will demultiplex and remove the barcodes, but not remove adapters or collapse the reads; suitable for nf-core/EAGER
+AdapterRemoval \
+--barcode-list /u/davisee/chapter2_data/Elisa_Prashasti_shotgun_Antarctica_reanalysis_2025/20210706_IODPExp382_deep_raw/barcodes.txt \
+--file1 /u/davisee/chapter2_data/Elisa_Prashasti_shotgun_Antarctica_reanalysis_2025/20210706_IODPExp382_deep_raw/23014_FD09252942_S1_L002_R1_001.fastq.gz \
+--file2 /u/davisee/chapter2_data/Elisa_Prashasti_shotgun_Antarctica_reanalysis_2025/20210706_IODPExp382_deep_raw/23014_FD09252942_S1_L002_R2_001.fastq.gz \
+--basename IMAS_IODP382 \
+--barcode-mm 1 \
+--minlength 25 \
+--threads $THREADS
+
+date
+
+echo ">>> If output files are compressed, the file extension needs to be renamed to .fastq.gz"
+echo ">>> If uncompressed, the file extension needs to be renamed to .fastq"
+
+module purge
+
+#END OF SCRIPT
+
+------------------------> this script worked! output was .truncated files
+
+###############################################11.11.2025##############################################################
+goals for today: 
+								(1) see how many of 7 data files are still .tar compressed
+								(2) begin .tar on chaper 2 data files
+								(3) run adapterremoval script opportunisitically hopefully at least 3/7 
+								(4) renaming script on IODP_382 --> adapterremoval_demux finished yesterday
+								(5) test new 03_EAGER script with IODP data, most likely will have new error ---> make this a tomorrow test
+
+	(1) data still in .tar form:
+	20250111_AVITI_ARCHIE_COLLAPS_NANTES 
+	20250728_SED25SeqPool1_Aviti_COLLAPS_TN
+	20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C 
+
+	(2) need to do decompression, here are some overall notes from Linda: 
+	#Then log in to Rosalind/Scratch
+
+#MD5Checksum for all files 
+md5sum -c *.md5 
+#output: OK #for each file
+#-c for checking; command will look into the content of the .md5 files (content=md5 checksum of the datafile) and compare with md5sum of files in the directory (datafiles)
+
+#Uncompress in raw data directory 
+tar -xvf FSXXXX_1.tar
+tar -xvf FSXXXX_2.tar
+#f: this must be the last flag of the command, and the tar file must be immediately after. It tells tar the name and path of the compressed file.
+#z: tells tar to decompress the archive using gzip (not applicable here, not gzipped, if it was then use tar -xvzf FSXXXX_1.tar)
+#x: tar can collect files or extract them. x does the latter.
+#v: makes tar talk a lot. Verbose output shows you all the files being extracted.
+	## starting .tar of files on moving (screen -r moving)
+
+(2.1) 20250111_Aviti_SED24SeqPool2
+
+[davisee@rosalind-01 20250111_Aviti_SED24SeqPool2_ARCHIE_COLLAPS_Nantes_LIBtests]$ md5sum -c *.md5
+FS11403561_1.tar.gz: OK
+FS11403561_2.tar.gz: OK
+
+tar -xvf FS11403561_1.tar.gz
+tar -xvf FS11403561_2.tar.gz
+
+(2.2) SED25SeqPool1_Aviti_COLLAPS_TN
+
+[davisee@rosalind-01 20250728_SED25SeqPool1_Aviti_COLLAPS_TN]$ md5sum -c *.md5
+FS28687268.tar: OK
+
+tar -xvf FS28687268.tar
+
+(2.3) 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C
+
+[davisee@rosalind-01 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C]$ md5sum -c *.md5
+250717_FS28687269.tar.gz: OK
+SummaryFiles.tar.gz: OK
+
+tar -xvf 250717_FS28687269.tar.gz
+
+	(3) start doing 01_adapterremoval_demux
+------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------
+	(3.1) 20250307_NovaSeq_SED24SeqPool3
+
+	### use as 'basename' and in PBS -N 
+	### this is the directory 
+/u/davisee/chapter2_data/Elisa_Prashasti_shotgun_Antarctica_reanalysis_2025/20250307_NovaSeq_SED24SeqPool3_SWAIS2CPilot_IODPExp403_KrillBaitsTrial_CANYONSPC01
+
+	###file1
+/u/davisee/chapter2_data/Elisa_Prashasti_shotgun_Antarctica_reanalysis_2025/20250307_NovaSeq_SED24SeqPool3_SWAIS2CPilot_IODPExp403_KrillBaitsTrial_CANYONSPC01/HWK5NDRX5_IN2023V01_ICDP5072_250120_FS11403115_Other_GCAAGAT-AGATCTC_R_241216_LUCDUX_INDEXLIBNOVASEQ_P001_R1.fastq.gz
+
+
+	###file2
+
+/u/davisee/chapter2_data/Elisa_Prashasti_shotgun_Antarctica_reanalysis_2025/20250307_NovaSeq_SED24SeqPool3_SWAIS2CPilot_IODPExp403_KrillBaitsTrial_CANYONSPC01/HWK5NDRX5_IN2023V01_ICDP5072_250120_FS11403115_Other_GCAAGAT-AGATCTC_R_241216_LUCDUX_INDEXLIBNOVASEQ_P001_R2.fastq.gz
+
+	###barcode-list
+/u/davisee/chapter2_data/Elisa_Prashasti_shotgun_Antarctica_reanalysis_2025/20250307_NovaSeq_SED24SeqPool3_SWAIS2CPilot_IODPExp403_KrillBaitsTrial_CANYONSPC01/barcodes_IN2023V01_ICDP5072.txt
+--------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------
+	(3.2) SED23SeqPool3_Novaseq ### use as 'basename' and in PBS -N  
+### this is the directory
+/u/davisee/chapter2_data/Elisa_Prashasti_shotgun_Antarctica_reanalysis_2025/SED23SeqPool3_Novaseq_raw
+
+###file1
+/u/davisee/chapter2_data/Elisa_Prashasti_shotgun_Antarctica_reanalysis_2025/SED23SeqPool3_Novaseq_raw/SED23SeqPool3_NovaSeq_LA_R1.fastq.gz
+
+###file2
+/u/davisee/chapter2_data/Elisa_Prashasti_shotgun_Antarctica_reanalysis_2025/SED23SeqPool3_Novaseq_raw/SED23SeqPool3_NovaSeq_LA_R2.fastq.gz
+
+###barcode-list
+/u/davisee/chapter2_data/Elisa_Prashasti_shotgun_Antarctica_reanalysis_2025/SED23SeqPool3_Novaseq_raw/barcodesLA.txt
+
+Notes: ran into error (propably slightly wrong error paths, so its currently running)
+------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------
+	(3.3) 20250111_Aviti_SED24SeqPool2
+
+### this is the directory
+/u/davisee/chapter2_data/Elisa_Prashasti_shotgun_Antarctica_reanalysis_2025/20250111_Aviti_SED24SeqPool2_ARCHIE_COLLAPS_Nantes_LIBtests
+
+###barcode-list
+/u/davisee/chapter2_data/Elisa_Prashasti_shotgun_Antarctica_reanalysis_2025/20250111_Aviti_SED24SeqPool2_ARCHIE_COLLAPS_Nantes_LIBtests/barcodesAVITI_new.txt
+
+
+###file1
+/u/davisee/chapter2_data/Elisa_Prashasti_shotgun_Antarctica_reanalysis_2025/20250111_Aviti_SED24SeqPool2_ARCHIE_COLLAPS_Nantes_LIBtests/FS11403561_1_R1.fastq.gz
+
+
+###file2
+/u/davisee/chapter2_data/Elisa_Prashasti_shotgun_Antarctica_reanalysis_2025/20250111_Aviti_SED24SeqPool2_ARCHIE_COLLAPS_Nantes_LIBtests/FS11403561_1_R2.fastq.gz
+
+
+###2_file1
+u/davisee/chapter2_data/Elisa_Prashasti_shotgun_Antarctica_reanalysis_2025/20250111_Aviti_SED24SeqPool2_ARCHIE_COLLAPS_Nantes_LIBtests/FS11403561_2_R1.fastq.gz
+
+
+###2_file2
+u/davisee/chapter2_data/Elisa_Prashasti_shotgun_Antarctica_reanalysis_2025/20250111_Aviti_SED24SeqPool2_ARCHIE_COLLAPS_Nantes_LIBtests/FS11403561_2_R2.fastq.gz
+---------------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------------
+	(3.4) 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C
+	### this is the directory
+	/u/davisee/chapter2_data/Elisa_Prashasti_shotgun_Antarctica_reanalysis_2025/20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C
+
+###barcode-list
+barcodes_SWAIS2C.txt
+
+###file1
+HCCLNDSXF_1_250717_FS28687269_Other_GCAAGAT-AGATCTC_R_250715_LINARM_INDEXLIBNOVASEQ_P001_R1.fastq.gz
+
+###file2
+HCCLNDSXF_1_250717_FS28687269_Other_GCAAGAT-AGATCTC_R_250715_LINARM_INDEXLIBNOVASEQ_P001_R2.fastq.gz
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+	(3.5) 20250728_SED25SeqPool1_Aviti_COLLAPS_TN
+
+### this is directory
+/u/davisee/chapter2_data/Elisa_Prashasti_shotgun_Antarctica_reanalysis_2025/20250728_SED25SeqPool1_Aviti_COLLAPS_TN
+
+###barcode-list
+/u/davisee/chapter2_data/Elisa_Prashasti_shotgun_Antarctica_reanalysis_2025/20250728_SED25SeqPool1_Aviti_COLLAPS_TN/barcodelist.txt
+
+###file1
+/u/davisee/chapter2_data/Elisa_Prashasti_shotgun_Antarctica_reanalysis_2025/20250728_SED25SeqPool1_Aviti_COLLAPS_TN/FS28687268_R1.fastq.gz
+
+
+###file2
+/u/davisee/chapter2_data/Elisa_Prashasti_shotgun_Antarctica_reanalysis_2025/20250728_SED25SeqPool1_Aviti_COLLAPS_TN/FS28687268_R2.fastq.gz
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+	(3.6)20210706_IODPExp382
+### this is at directory 
+/u/davisee/chapter2_data/Elisa_Prashasti_shotgun_Antarctica_reanalysis_2025/20210706_IODPExp382_deep_raw
+
+###barcode-list
+/u/davisee/chapter2_data/Elisa_Prashasti_shotgun_Antarctica_reanalysis_2025/20210706_IODPExp382_deep_raw/barcodes.txt
+
+###file1
+/u/davisee/chapter2_data/Elisa_Prashasti_shotgun_Antarctica_reanalysis_2025/20210706_IODPExp382_deep_raw/23014_FD09252942_S1_L002_R1_001.fastq.gz
+###file2
+/u/davisee/chapter2_data/Elisa_Prashasti_shotgun_Antarctica_reanalysis_2025/20210706_IODPExp382_deep_raw/23014_FD09252942_S1_L002_R2_001.fastq.gz
+------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------- 
+
+	(4) renaming files! 
+
+	(4.1) IMAS_IODP382
+	-ran script and worked
+	----> NEXT STEP: make directories for (1) raw data /// or delete, (2) Demux_only
+
+
+	################# 14.11.2025 ##############
+
+	I think I accidentally deletec the _R1.fastq.gz instead of the fastqc file, so that is why the script was failing and throwing up "file doesn't exist", so i am trying the file again. 
+
+	(now all files are past .tar phase) --> updated this excel sample sheet
+######################27.11.2025##################
+Re-running 01_AR with trimming+ demux, but ran into issue again with 
+samples:
+Aviti_SED24SeqPool2-{1,2}
+SED25SeqPool1_Aviti_COLLAPS
+ERROR: 
+
+The following have been reloaded with a version change:
+  1) GCCcore/6.4.0 => GCCcore/13.2.0
+
+Read 1 adapters / adapter pairs from 'adapter_list.txt'...
+Read 40 barcodes / barcode pairs from 'barcodesAVITI_new.txt' ...
+Trimming paired end reads ...
+Opening FASTQ file 'FS11403561_2_R1.fastq.gz', line numbers start at 1
+Error reading FASTQ record at line 1; aborting:
+    Phred+33 encoded quality score is greater than the expected maximum of 41 (J).
+    Please verify the format of these files.
+
+    If the quality scores are actually Phred+64 encoded, then use the
+    '--qualitybase 64' command-line option.
+
+    If the quality scores are Phred+33 encoded, but includes scores in a greater
+    range than expected, then use the '--qualitymax' option. Note that this option
+    effects both reading and writing of FASTQ files.
+
+    See README for more information.
+Aborting thread due to error.
+ERROR: AdapterRemoval did not run to completion;
+       do NOT make use of resulting trimmed reads!
+
+
+#####Tried prior fix with during just demultiplexing that worked, so will try adding this: 
+--qualitybase 33 \
+--qualitymax 60
+
+##### had a bit of an oopsie ------ !!! need to keep running again in the backgroound
+
+
+
+####################### 28.11.2025 #######################
+
+Headed to RAMS - Register of Antarctic Marine Species - to see what other species I am missing, going to FAMily level
+
+Families from Aves (other than Sphenisciformes)
+-- putting into sheet 2 of Data_Collection_excel_sheet
+NOTE: only taking family level names where there are counts e.g. Family Name (number), which indicates SO records in database.
+
+
+###################### 02.12.2025 ########################
+
+was testing R script to look at RAMS mitchondrial taxa, had to generate a new API on orcid institution ncbi account, 
+
+NEW_API_KEY=ec2206cec18bbc88bf04e1f1683624c4ee08
+
+need to replace this key value in get_refseq and get_mitogenomes opportunistic
+
+### created a script in chapter2_data/Elisa_Prashasti_shotgun_Antarctica_reanalysis_2025/make_project_subdirs.sh to make standard subdirectories I can put data after I run it. 
+
+usage() {
+  cat <<'EOF'
+Usage:
+  make_project_subdirs.sh [ROOT_DIR]
+
+Description:
+  For every immediate subdirectory under ROOT_DIR (default: current directory),
+  create the following subfolders inside each one:
+    - AdapterRemoval_demux_nocollapse
+    - AdapterRemoval_demux_collapse
+    - QC_files/rawQCfiles
+    - QC_files/demux_trim_collapse_QCfiles
+    - QC_files/post_komplexity_dedupe
+    - Komplexity_dedupe_for_fastq_renaming
+
+Examples:
+  ./make_project_subdirs.sh
+  ./make_project_subdirs.sh /path/to/root
+
+Notes:
+  - Uses `mkdir -p` (no errors if directories already exist).
+  - Processes depth-1 directories only (not recursive).
+  - Handles spaces in directory names.
+  - Excludes hidden entries by default; remove the filter to include them.
+EOF
+}
+
+
+#### going to run rosalind_01_AdapterREmoval_demux_trim_collapse_qc.sh, which uses some of these new file structures, can do the others for after komplexity_dedupe and do 02_renaming
+
+NOTE: for 02_renaming, make sure to check that after komplexity and dedupe, these are still just .fastq files 
+
+
+
+################################################# 3.12.2025 #####################################################
+
+#about rosalind_01_AdapterRemoval_demux_trim_collapse_qc.sh
+
+--- ran the full script yesterday including QC after running into module issues
+
+
+############################################ 07.01. 2026 (happy new year + 1 week) ##########################################
+
+
+#to create txt file that prints all subdirectory namaes into a new taxa file
+for i in #(ls -d */); do echo ${i%%/} > oppo_taxaID_results.txt; done
+
+#decompress files in subdirectories listed by text file 
+while read -r dir; do fir "$dir" -type f -name "*.gz" -exec gunzip -k {} \;; done < oppo_taxaID_results.txt
+
+ 
+ #################### 12.01.2026 #########################
+ # using seqkit to filter out _clean.fna files into genes + geneomes
+ (db_mito_mining_building) [davisee@rosalind-01 34759]$ ls -lh
+total 4.9M
+-rw-r--r-- 1 davisee hpcusers  147 Nov 28 16:35 34759_metrics.csv
+-rw-r--r-- 1 davisee hpcusers 188K Nov 28 16:35 34759_mitogenomes.fna
+-rw-r--r-- 1 davisee hpcusers 188K Jan  8 12:40 34759_mitogenomes_clean.fna
+-rw-r--r-- 1 davisee hpcusers 4.5M Jan 10 10:25 alignment_34759.best.fas
+(db_mito_mining_building) [davisee@rosalind-01 34759]$ seqkit seq -M 5000 34759_mitogenomes_clean.fna -o 34759_mit  ogenes_clean.fas
+[WARN] you may switch on flag -g/--remove-gaps to remove spaces
+(db_mito_mining_building) [davisee@rosalind-01 34759]$ ls -lh
+total 5.0M
+-rw-r--r-- 1 davisee hpcusers  147 Nov 28 16:35 34759_metrics.csv
+-rw-r--r-- 1 davisee hpcusers  86K Jan 12 16:34 34759_mitogenes_clean.fas
+-rw-r--r-- 1 davisee hpcusers 188K Nov 28 16:35 34759_mitogenomes.fna
+-rw-r--r-- 1 davisee hpcusers 188K Jan  8 12:40 34759_mitogenomes_clean.fna
+-rw-r--r-- 1 davisee hpcusers 4.5M Jan 10 10:25 alignment_34759.best.fas
+(db_mito_mining_building) [davisee@rosalind-01 34759]$ seqkit seq -m 5000 34759_mitogenomes_clean.fna -o 34759_mit  ogenomes_only_clean.fas
+[WARN] you may switch on flag -g/--remove-gaps to remove spaces
+(db_mito_mining_building) [davisee@rosalind-01 34759]$ cat -less 34759_mitogenomes_only_clean.fas
+
+# tomorrow, can try (1) filtering out reference sequences to align together with prank, then use that are reference alignment? (2) choose one of the reference sequences for each with bowtie2/bwa to build an index for each sub-group or large group, and then use that to run local alignment with gene sequences.
+(3) review alignments, do hand alignments, and use this to trim! 
+###################### 17.01.2026 ######################
+######### stuff done on terminal that worked after not working in the ncbi_cli_downloads.sh script. 
+(ncbi_cli_downloads) [davisee@rosalind-01 34759]$ cd ~/Refseq_2026/
+(ncbi_cli_downloads) [davisee@rosalind-01 Refseq_2026]$
+(ncbi_cli_downloads) [davisee@rosalind-01 Refseq_2026]$ taxonkit list --data-dir ~/.taxonkit --ids 314295 \
+> | sed '1d' | grep -Eo '^[[:space:]]*[0-9]+' | tr -d ' ' | awk 'NF>0' \
+> > apes.taxids
+
+(ncbi_cli_downloads) [davisee@rosalind-01 Refseq_2026]$
+(ncbi_cli_downloads) [davisee@rosalind-01 Refseq_2026]$ cat apes.taxids
+9577
+9578
+9579
+9583
+716690
+9580
+716695
+716696
+716697
+716698
+9587
+9588
+716692
+716694
+9589
+81572
+716691
+2647113
+9581
+150249
+280856
+288892
+419588
+425245
+2023128
+2768846
+2768845
+2841023
+3370097
+325165
+9586
+29089
+423449
+423450
+716684
+716685
+61852
+61853
+327374
+693984
+1616038
+2170372
+2170373
+2170374
+2768844
+325166
+9590
+405039
+325167
+61851
+593543
+1934190
+1934191
+9604
+207598
+9592
+9593
+9595
+183511
+406788
+499232
+46359
+1159185
+9596
+9597
+9598
+37010
+37011
+37012
+756884
+1294088
+9605
+9606
+63221
+741158
+1425170
+2665952
+2665953
+2813598
+2813599
+607660
+9599
+9600
+9602
+2753605
+2753606
+9601
+502961
+2051901
+2624844
+9603
+2883640
+2883641
+2922387
+2922388
+(ncbi_cli_downloads) [davisee@rosalind-01 Refseq_2026]$ awk -F'\t' 'NR==FNR{bad[$1]=1;next} NR==1 || !($2 in bad)' apes.taxids metazoa.tsv > metazoa_no_apes.tsv
+(ncbi_cli_downloads) [davisee@rosalind-01 Refseq_2026]$ ls -lh
+total 51M
+-rw-r--r-- 1 davisee rosalind_admins  633 Jan 17 17:06 apes.taxids
+-rw-r--r-- 1 davisee rosalind_admins 6.4M Jan 17 17:00 fungi.jsonl.gz
+-rw-r--r-- 1 davisee rosalind_admins 2.9M Jan 17 17:01 fungi.tsv
+-rw-r--r-- 1 davisee rosalind_admins 9.8M Jan 17 16:59 metazoa.jsonl.gz
+-rw-r--r-- 1 davisee rosalind_admins 3.0M Jan 17 17:01 metazoa.tsv
+-rw-r--r-- 1 davisee rosalind_admins 2.8M Jan 17 17:07 metazoa_no_apes.tsv
+-rw-r--r-- 1 davisee rosalind_admins  17M Jan 17 17:01 mitochondria.jsonl.gz
+-rw-r--r-- 1 davisee rosalind_admins 5.8M Jan 17 17:01 mitochondria.tsv
+-rw-r--r-- 1 davisee rosalind_admins 2.6M Jan 17 17:01 plastids.jsonl.gz
+-rw-r--r-- 1 davisee rosalind_admins 926K Jan 17 17:01 plastids.tsv
+-rw-r--r-- 1 davisee rosalind_admins 148K Jan 17 17:00 protozoa.jsonl.gz
+-rw-r--r-- 1 davisee rosalind_admins  59K Jan 17 17:01 protozoa.tsv
+(ncbi_cli_downloads) [davisee@rosalind-01 Refseq_2026]$
+base.tsv"_downloads) [davisee@rosalind-01 Refseq_2026]$ echo ">>> Concatenating group TSVs → eukaryote_master_data
+>>> Concatenating group TSVs → eukaryote_master_database.tsv
+(ncbi_cli_downloads) [davisee@rosalind-01 Refseq_2026]$ # Keep the header from the first file only
+(ncbi_cli_downloads) [davisee@rosalind-01 Refseq_2026]$ head -n 1 metazoa_no_apes.tsv > eukaryote_master_database.tsv
+.tsv; do
+  tail -n +2 "$part" >> eukaryote_master_database.tsv
+done
+(ncbi_cli_downloads) [davisee@rosalind-01 Refseq_2026]$ for part in metazoa_no_apes.tsv fungi.tsv protozoa.tsv mitochondria.tsv plastids.tsv; do
+>   tail -n +2 "$part" >> eukaryote_master_database.tsv
+> done
+(ncbi_cli_downloads) [davisee@rosalind-01 Refseq_2026]$ ls -lh
+total 63M
+-rw-r--r-- 1 davisee rosalind_admins  633 Jan 17 17:06 apes.taxids
+-rw-r--r-- 1 davisee rosalind_admins  13M Jan 17 17:08 eukaryote_master_database.tsv
+-rw-r--r-- 1 davisee rosalind_admins 6.4M Jan 17 17:00 fungi.jsonl.gz
+-rw-r--r-- 1 davisee rosalind_admins 2.9M Jan 17 17:01 fungi.tsv
+-rw-r--r-- 1 davisee rosalind_admins 9.8M Jan 17 16:59 metazoa.jsonl.gz
+-rw-r--r-- 1 davisee rosalind_admins 3.0M Jan 17 17:01 metazoa.tsv
+-rw-r--r-- 1 davisee rosalind_admins 2.8M Jan 17 17:07 metazoa_no_apes.tsv
+-rw-r--r-- 1 davisee rosalind_admins  17M Jan 17 17:01 mitochondria.jsonl.gz
+-rw-r--r-- 1 davisee rosalind_admins 5.8M Jan 17 17:01 mitochondria.tsv
+-rw-r--r-- 1 davisee rosalind_admins 2.6M Jan 17 17:01 plastids.jsonl.gz
+-rw-r--r-- 1 davisee rosalind_admins 926K Jan 17 17:01 plastids.tsv
+-rw-r--r-- 1 davisee rosalind_admins 148K Jan 17 17:00 protozoa.jsonl.gz
+-rw-r--r-- 1 davisee rosalind_admins  59K Jan 17 17:01 protozoa.tsv
+########### now this tsv can be looked at with Mikkels workbook if wanted. However, this is just metadata, and is not the actual download. will simply tell us how to adjust our data for the next script. 
+
+
+#### switch over to trying to solve mitogenome problem, by uploaded a refseq???
+or would it be easier to simply alter my oppo script to not take from refSeq?
+
+(db_mito_mining_building) [davisee@rosalind-01 9726]$ bowtie2-build 9726_mitogenomes_clean.matched.fna  9726_mito_index
+Settings:
+  Output files: "9726_mito_index.*.bt2"
+  Line rate: 6 (line is 64 bytes)
+  Lines per side: 1 (side is 64 bytes)
+  Offset rate: 4 (one in 16)
+  FTable chars: 10
+  Strings: unpacked
+  Max bucket size: default
+  Max bucket size, sqrt multiplier: default
+  Max bucket size, len divisor: 4
+  Difference-cover sample period: 1024
+  Endianness: little
+  Actual local endianness: little
+  Sanity checking: disabled
+  Assertions: disabled
+  Random seed: 0
+  Sizeofs: void*:8, int:4, long:8, size_t:8
+Input files DNA, FASTA:
+  9726_mitogenomes_clean.matched.fna
+Building a SMALL index
+Reading reference sizes
+  Time reading reference sizes: 00:00:00
+Calculating joined length
+Writing header
+Reserving space for joined string
+Joining reference sequences
+  Time to join reference sequences: 00:00:00
+bmax according to bmaxDivN setting: 110774
+Using parameters --bmax 83081 --dcv 1024
+  Doing ahead-of-time memory usage test
+  Passed!  Constructing with these parameters: --bmax 83081 --dcv 1024
+Constructing suffix-array element generator
+Building DifferenceCoverSample
+  Building sPrime
+  Building sPrimeOrder
+  V-Sorting samples
+  V-Sorting samples time: 00:00:00
+  Allocating rank array
+  Ranking v-sort output
+  Ranking v-sort output time: 00:00:00
+  Invoking Larsson-Sadakane on ranks
+  Invoking Larsson-Sadakane on ranks time: 00:00:00
+  Sanity-checking and returning
+Building samples
+Reserving space for 12 sample suffixes
+Generating random suffixes
+QSorting 12 sample offsets, eliminating duplicates
+QSorting sample offsets, eliminating duplicates time: 00:00:00
+Multikey QSorting 12 samples
+  (Using difference cover)
+  Multikey QSorting samples time: 00:00:00
+Calculating bucket sizes
+Splitting and merging
+  Splitting and merging time: 00:00:00
+Split 1, merged 7; iterating...
+Splitting and merging
+  Splitting and merging time: 00:00:00
+Avg bucket size: 63298.7 (target: 83080)
+Converting suffix-array elements to index image
+Allocating ftab, absorbFtab
+Entering Ebwt loop
+Getting block 1 of 7
+  Reserving size (83081) for bucket 1
+  Calculating Z arrays for bucket 1
+  Entering block accumulator loop for bucket 1:
+  bucket 1: 10%
+  bucket 1: 20%
+  bucket 1: 30%
+  bucket 1: 40%
+  bucket 1: 50%
+  bucket 1: 60%
+  bucket 1: 70%
+  bucket 1: 80%
+  bucket 1: 90%
+  bucket 1: 100%
+  Sorting block of length 77362 for bucket 1
+  (Using difference cover)
+  Sorting block time: 00:00:00
+Returning block of 77363 for bucket 1
+Getting block 2 of 7
+  Reserving size (83081) for bucket 2
+  Calculating Z arrays for bucket 2
+  Entering block accumulator loop for bucket 2:
+  bucket 2: 10%
+  bucket 2: 20%
+  bucket 2: 30%
+  bucket 2: 40%
+  bucket 2: 50%
+  bucket 2: 60%
+  bucket 2: 70%
+  bucket 2: 80%
+  bucket 2: 90%
+  bucket 2: 100%
+  Sorting block of length 42768 for bucket 2
+  (Using difference cover)
+  Sorting block time: 00:00:00
+Returning block of 42769 for bucket 2
+Getting block 3 of 7
+  Reserving size (83081) for bucket 3
+  Calculating Z arrays for bucket 3
+  Entering block accumulator loop for bucket 3:
+  bucket 3: 10%
+  bucket 3: 20%
+  bucket 3: 30%
+  bucket 3: 40%
+  bucket 3: 50%
+  bucket 3: 60%
+  bucket 3: 70%
+  bucket 3: 80%
+  bucket 3: 90%
+  bucket 3: 100%
+  Sorting block of length 46014 for bucket 3
+  (Using difference cover)
+  Sorting block time: 00:00:00
+Returning block of 46015 for bucket 3
+Getting block 4 of 7
+  Reserving size (83081) for bucket 4
+  Calculating Z arrays for bucket 4
+  Entering block accumulator loop for bucket 4:
+  bucket 4: 10%
+  bucket 4: 20%
+  bucket 4: 30%
+  bucket 4: 40%
+  bucket 4: 50%
+  bucket 4: 60%
+  bucket 4: 70%
+  bucket 4: 80%
+  bucket 4: 90%
+  bucket 4: 100%
+  Sorting block of length 58806 for bucket 4
+  (Using difference cover)
+  Sorting block time: 00:00:00
+Returning block of 58807 for bucket 4
+Getting block 5 of 7
+  Reserving size (83081) for bucket 5
+  Calculating Z arrays for bucket 5
+  Entering block accumulator loop for bucket 5:
+  bucket 5: 10%
+  bucket 5: 20%
+  bucket 5: 30%
+  bucket 5: 40%
+  bucket 5: 50%
+  bucket 5: 60%
+  bucket 5: 70%
+  bucket 5: 80%
+  bucket 5: 90%
+  bucket 5: 100%
+  Sorting block of length 76253 for bucket 5
+  (Using difference cover)
+  Sorting block time: 00:00:00
+Returning block of 76254 for bucket 5
+Getting block 6 of 7
+  Reserving size (83081) for bucket 6
+  Calculating Z arrays for bucket 6
+  Entering block accumulator loop for bucket 6:
+  bucket 6: 10%
+  bucket 6: 20%
+  bucket 6: 30%
+  bucket 6: 40%
+  bucket 6: 50%
+  bucket 6: 60%
+  bucket 6: 70%
+  bucket 6: 80%
+  bucket 6: 90%
+  bucket 6: 100%
+  Sorting block of length 74685 for bucket 6
+  (Using difference cover)
+  Sorting block time: 00:00:00
+Returning block of 74686 for bucket 6
+Getting block 7 of 7
+  Reserving size (83081) for bucket 7
+  Calculating Z arrays for bucket 7
+  Entering block accumulator loop for bucket 7:
+  bucket 7: 10%
+  bucket 7: 20%
+  bucket 7: 30%
+  bucket 7: 40%
+  bucket 7: 50%
+  bucket 7: 60%
+  bucket 7: 70%
+  bucket 7: 80%
+  bucket 7: 90%
+  bucket 7: 100%
+  Sorting block of length 67203 for bucket 7
+  (Using difference cover)
+  Sorting block time: 00:00:00
+Returning block of 67204 for bucket 7
+Exited Ebwt loop
+fchr[A]: 0
+fchr[C]: 146524
+fchr[G]: 262489
+fchr[T]: 318947
+fchr[$]: 443097
+Exiting Ebwt::buildToDisk()
+Returning from initFromVector
+Wrote 4345417 bytes to primary EBWT file: 9726_mito_index.1.bt2.tmp
+Wrote 110780 bytes to secondary EBWT file: 9726_mito_index.2.bt2.tmp
+Re-opening _in1 and _in2 as input streams
+Returning from Ebwt constructor
+Headers:
+    len: 443097
+    bwtLen: 443098
+    sz: 110775
+    bwtSz: 110775
+    lineRate: 6
+    offRate: 4
+    offMask: 0xfffffff0
+    ftabChars: 10
+    eftabLen: 20
+    eftabSz: 80
+    ftabLen: 1048577
+    ftabSz: 4194308
+    offsLen: 27694
+    offsSz: 110776
+    lineSz: 64
+    sideSz: 64
+    sideBwtSz: 48
+    sideBwtLen: 192
+    numSides: 2308
+    numLines: 2308
+    ebwtTotLen: 147712
+    ebwtTotSz: 147712
+    color: 0
+    reverse: 0
+Total time for call to driver() for forward index: 00:00:00
+Reading reference sizes
+  Time reading reference sizes: 00:00:00
+Calculating joined length
+Writing header
+Reserving space for joined string
+Joining reference sequences
+  Time to join reference sequences: 00:00:00
+  Time to reverse reference sequence: 00:00:00
+bmax according to bmaxDivN setting: 110774
+Using parameters --bmax 83081 --dcv 1024
+  Doing ahead-of-time memory usage test
+  Passed!  Constructing with these parameters: --bmax 83081 --dcv 1024
+Constructing suffix-array element generator
+Building DifferenceCoverSample
+  Building sPrime
+  Building sPrimeOrder
+  V-Sorting samples
+  V-Sorting samples time: 00:00:00
+  Allocating rank array
+  Ranking v-sort output
+  Ranking v-sort output time: 00:00:00
+  Invoking Larsson-Sadakane on ranks
+  Invoking Larsson-Sadakane on ranks time: 00:00:00
+  Sanity-checking and returning
+Building samples
+Reserving space for 12 sample suffixes
+Generating random suffixes
+QSorting 12 sample offsets, eliminating duplicates
+QSorting sample offsets, eliminating duplicates time: 00:00:00
+Multikey QSorting 12 samples
+  (Using difference cover)
+  Multikey QSorting samples time: 00:00:00
+Calculating bucket sizes
+Splitting and merging
+  Splitting and merging time: 00:00:00
+Split 1, merged 8; iterating...
+Splitting and merging
+  Splitting and merging time: 00:00:00
+Avg bucket size: 73848.7 (target: 83080)
+Converting suffix-array elements to index image
+Allocating ftab, absorbFtab
+Entering Ebwt loop
+Getting block 1 of 6
+  Reserving size (83081) for bucket 1
+  Calculating Z arrays for bucket 1
+  Entering block accumulator loop for bucket 1:
+  bucket 1: 10%
+  bucket 1: 20%
+  bucket 1: 30%
+  bucket 1: 40%
+  bucket 1: 50%
+  bucket 1: 60%
+  bucket 1: 70%
+  bucket 1: 80%
+  bucket 1: 90%
+  bucket 1: 100%
+  Sorting block of length 83000 for bucket 1
+  (Using difference cover)
+  Sorting block time: 00:00:00
+Returning block of 83001 for bucket 1
+Getting block 2 of 6
+  Reserving size (83081) for bucket 2
+  Calculating Z arrays for bucket 2
+  Entering block accumulator loop for bucket 2:
+  bucket 2: 10%
+  bucket 2: 20%
+  bucket 2: 30%
+  bucket 2: 40%
+  bucket 2: 50%
+  bucket 2: 60%
+  bucket 2: 70%
+  bucket 2: 80%
+  bucket 2: 90%
+  bucket 2: 100%
+  Sorting block of length 74897 for bucket 2
+  (Using difference cover)
+  Sorting block time: 00:00:00
+Returning block of 74898 for bucket 2
+Getting block 3 of 6
+  Reserving size (83081) for bucket 3
+  Calculating Z arrays for bucket 3
+  Entering block accumulator loop for bucket 3:
+  bucket 3: 10%
+  bucket 3: 20%
+  bucket 3: 30%
+  bucket 3: 40%
+  bucket 3: 50%
+  bucket 3: 60%
+  bucket 3: 70%
+  bucket 3: 80%
+  bucket 3: 90%
+  bucket 3: 100%
+  Sorting block of length 71924 for bucket 3
+  (Using difference cover)
+  Sorting block time: 00:00:00
+Returning block of 71925 for bucket 3
+Getting block 4 of 6
+  Reserving size (83081) for bucket 4
+  Calculating Z arrays for bucket 4
+  Entering block accumulator loop for bucket 4:
+  bucket 4: 10%
+  bucket 4: 20%
+  bucket 4: 30%
+  bucket 4: 40%
+  bucket 4: 50%
+  bucket 4: 60%
+  bucket 4: 70%
+  bucket 4: 80%
+  bucket 4: 90%
+  bucket 4: 100%
+  Sorting block of length 80213 for bucket 4
+  (Using difference cover)
+  Sorting block time: 00:00:00
+Returning block of 80214 for bucket 4
+Getting block 5 of 6
+  Reserving size (83081) for bucket 5
+  Calculating Z arrays for bucket 5
+  Entering block accumulator loop for bucket 5:
+  bucket 5: 10%
+  bucket 5: 20%
+  bucket 5: 30%
+  bucket 5: 40%
+  bucket 5: 50%
+  bucket 5: 60%
+  bucket 5: 70%
+  bucket 5: 80%
+  bucket 5: 90%
+  bucket 5: 100%
+  Sorting block of length 50544 for bucket 5
+  (Using difference cover)
+  Sorting block time: 00:00:00
+Returning block of 50545 for bucket 5
+Getting block 6 of 6
+  Reserving size (83081) for bucket 6
+  Calculating Z arrays for bucket 6
+  Entering block accumulator loop for bucket 6:
+  bucket 6: 10%
+  bucket 6: 20%
+  bucket 6: 30%
+  bucket 6: 40%
+  bucket 6: 50%
+  bucket 6: 60%
+  bucket 6: 70%
+  bucket 6: 80%
+  bucket 6: 90%
+  bucket 6: 100%
+  Sorting block of length 82514 for bucket 6
+  (Using difference cover)
+  Sorting block time: 00:00:00
+Returning block of 82515 for bucket 6
+Exited Ebwt loop
+fchr[A]: 0
+fchr[C]: 146524
+fchr[G]: 262489
+fchr[T]: 318947
+fchr[$]: 443097
+Exiting Ebwt::buildToDisk()
+Returning from initFromVector
+Wrote 4345417 bytes to primary EBWT file: 9726_mito_index.rev.1.bt2.tmp
+Wrote 110780 bytes to secondary EBWT file: 9726_mito_index.rev.2.bt2.tmp
+Re-opening _in1 and _in2 as input streams
+Returning from Ebwt constructor
+Headers:
+    len: 443097
+    bwtLen: 443098
+    sz: 110775
+    bwtSz: 110775
+    lineRate: 6
+    offRate: 4
+    offMask: 0xfffffff0
+    ftabChars: 10
+    eftabLen: 20
+    eftabSz: 80
+    ftabLen: 1048577
+    ftabSz: 4194308
+    offsLen: 27694
+    offsSz: 110776
+    lineSz: 64
+    sideSz: 64
+    sideBwtSz: 48
+    sideBwtLen: 192
+    numSides: 2308
+    numLines: 2308
+    ebwtTotLen: 147712
+    ebwtTotSz: 147712
+    color: 0
+    reverse: 1
+Total time for backward call to driver() for mirror index: 00:00:00
+Renaming 9726_mito_index.3.bt2.tmp to 9726_mito_index.3.bt2
+Renaming 9726_mito_index.4.bt2.tmp to 9726_mito_index.4.bt2
+Renaming 9726_mito_index.1.bt2.tmp to 9726_mito_index.1.bt2
+Renaming 9726_mito_index.2.bt2.tmp to 9726_mito_index.2.bt2
+Renaming 9726_mito_index.rev.1.bt2.tmp to 9726_mito_index.rev.1.bt2
+Renaming 9726_mito_index.rev.2.bt2.tmp to 9726_mito_index.rev.2.bt2
+(db_mito_mining_building) [davisee@rosalind-01 9726]$ ls -lh
+total 81M
+-rw-r--r-- 1 davisee hpcusers  147 Nov 28 16:15 9726_metrics.csv
+-rw-r--r-- 1 davisee hpcusers    0 Jan 17 17:34 9726_mito_index
+-rw-r--r-- 1 davisee hpcusers 4.2M Jan 17 17:35 9726_mito_index.1.bt2
+-rw-r--r-- 1 davisee hpcusers 109K Jan 17 17:35 9726_mito_index.2.bt2
+-rw-r--r-- 1 davisee hpcusers  863 Jan 17 17:35 9726_mito_index.3.bt2
+-rw-r--r-- 1 davisee hpcusers 109K Jan 17 17:35 9726_mito_index.4.bt2
+-rw-r--r-- 1 davisee hpcusers 4.2M Jan 17 17:35 9726_mito_index.rev.1.bt2
+-rw-r--r-- 1 davisee hpcusers 109K Jan 17 17:35 9726_mito_index.rev.2.bt2
+-rw-r--r-- 1 davisee hpcusers  24M Nov 28 16:15 9726_mitogenomes.fna
+-rw-r--r-- 1 davisee hpcusers  24M Jan  8 12:40 9726_mitogenomes_clean.fna
+-rw-r--r-- 1 davisee hpcusers 443K Jan 17 17:23 9726_mitogenomes_clean.matched.fna
+-rw-r--r-- 1 davisee hpcusers  24M Jan 17 17:23 9726_mitogenomes_clean.unmatched.fna
+-rw-r--r-- 1 davisee hpcusers   19 Jan 17 17:22 refseq_accession_filter.txt
+(db_mito_mining_building) [davisee@rosalind-01 9726]$ bowtie2 --help
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+        LANGUAGE = (unset),
+        LC_ALL = (unset),
+        LANG = "C.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+Bowtie 2 version 2.5.4 by Ben Langmead (langmea@cs.jhu.edu, www.cs.jhu.edu/~langmea)
+Usage:
+  bowtie2 [options]* -x <bt2-idx> {-1 <m1> -2 <m2> | -U <r> | --interleaved <i> | -b <bam>} [-S <sam>]
+
+  <bt2-idx>  Index filename prefix (minus trailing .X.bt2).
+             NOTE: Bowtie 1 and Bowtie 2 indexes are not compatible.
+  <m1>       Files with #1 mates, paired with files in <m2>.
+             Could be gzip'ed (extension: .gz) or bzip2'ed (extension: .bz2).
+  <m2>       Files with #2 mates, paired with files in <m1>.
+             Could be gzip'ed (extension: .gz) or bzip2'ed (extension: .bz2).
+  <r>        Files with unpaired reads.
+             Could be gzip'ed (extension: .gz) or bzip2'ed (extension: .bz2).
+  <i>        Files with interleaved paired-end FASTQ/FASTA reads
+             Could be gzip'ed (extension: .gz) or bzip2'ed (extension: .bz2).
+  <bam>      Files are unaligned BAM sorted by read name.
+  <sam>      File for SAM output (default: stdout)
+
+  <m1>, <m2>, <r> can be comma-separated lists (no whitespace) and can be
+  specified many times.  E.g. '-U file1.fq,file2.fq -U file3.fq'.
+
+Options (defaults in parentheses):
+
+ Input:
+  -q                 query input files are FASTQ .fq/.fastq (default)
+  --tab5             query input files are TAB5 .tab5
+  --tab6             query input files are TAB6 .tab6
+  --qseq             query input files are in Illumina's qseq format
+  -f                 query input files are (multi-)FASTA .fa/.mfa
+  -r                 query input files are raw one-sequence-per-line
+  -F k:<int>,i:<int> query input files are continuous FASTA where reads
+                     are substrings (k-mers) extracted from the FASTA file
+                     and aligned at offsets 1, 1+i, 1+2i ... end of reference
+  -c                 <m1>, <m2>, <r> are sequences themselves, not files
+  -s/--skip <int>    skip the first <int> reads/pairs in the input (none)
+  -u/--upto <int>    stop after first <int> reads/pairs (no limit)
+  -5/--trim5 <int>   trim <int> bases from 5'/left end of reads (0)
+  -3/--trim3 <int>   trim <int> bases from 3'/right end of reads (0)
+  --trim-to [3:|5:]<int> trim reads exceeding <int> bases from either 3' or 5' end
+                     If the read end is not specified then it defaults to 3 (0)
+  --phred33          qualities are Phred+33 (default)
+  --phred64          qualities are Phred+64
+  --int-quals        qualities encoded as space-delimited integers
+
+ Presets:                 Same as:
+  For --end-to-end:
+   --very-fast            -D 5 -R 1 -N 0 -L 22 -i S,0,2.50
+   --fast                 -D 10 -R 2 -N 0 -L 22 -i S,0,2.50
+   --sensitive            -D 15 -R 2 -N 0 -L 22 -i S,1,1.15 (default)
+   --very-sensitive       -D 20 -R 3 -N 0 -L 20 -i S,1,0.50
+
+  For --local:
+   --very-fast-local      -D 5 -R 1 -N 0 -L 25 -i S,1,2.00
+   --fast-local           -D 10 -R 2 -N 0 -L 22 -i S,1,1.75
+   --sensitive-local      -D 15 -R 2 -N 0 -L 20 -i S,1,0.75 (default)
+   --very-sensitive-local -D 20 -R 3 -N 0 -L 20 -i S,1,0.50
+
+ Alignment:
+  -N <int>           max # mismatches in seed alignment; can be 0 or 1 (0)
+  -L <int>           length of seed substrings; must be >3, <32 (22)
+  -i <func>          interval between seed substrings w/r/t read len (S,1,1.15)
+  --n-ceil <func>    func for max # non-A/C/G/Ts permitted in aln (L,0,0.15)
+  --dpad <int>       include <int> extra ref chars on sides of DP table (15)
+  --gbar <int>       disallow gaps within <int> nucs of read extremes (4)
+  --ignore-quals     treat all quality values as 30 on Phred scale (off)
+  --nofw             do not align forward (original) version of read (off)
+  --norc             do not align reverse-complement version of read (off)
+  --no-1mm-upfront   do not allow 1 mismatch alignments before attempting to
+                     scan for the optimal seeded alignments
+  --end-to-end       entire read must align; no clipping (on)
+   OR
+  --local            local alignment; ends might be soft clipped (off)
+
+ Scoring:
+  --ma <int>         match bonus (0 for --end-to-end, 2 for --local)
+  --mp <int>         max penalty for mismatch; lower qual = lower penalty (6)
+  --np <int>         penalty for non-A/C/G/Ts in read/ref (1)
+  --rdg <int>,<int>  read gap open, extend penalties (5,3)
+  --rfg <int>,<int>  reference gap open, extend penalties (5,3)
+  --score-min <func> min acceptable alignment score w/r/t read length
+                     (G,20,8 for local, L,-0.6,-0.6 for end-to-end)
+
+ Reporting:
+  (default)          look for multiple alignments, report best, with MAPQ
+   OR
+  -k <int>           report up to <int> alns per read; MAPQ not meaningful
+   OR
+  -a/--all           report all alignments; very slow, MAPQ not meaningful
+
+ Effort:
+  -D <int>           give up extending after <int> failed extends in a row (15)
+  -R <int>           for reads w/ repetitive seeds, try <int> sets of seeds (2)
+
+ Paired-end:
+  -I/--minins <int>  minimum fragment length (0)
+  -X/--maxins <int>  maximum fragment length (500)
+  --fr/--rf/--ff     -1, -2 mates align fw/rev, rev/fw, fw/fw (--fr)
+  --no-mixed         suppress unpaired alignments for paired reads
+  --no-discordant    suppress discordant alignments for paired reads
+  --dovetail         concordant when mates extend past each other
+  --no-contain       not concordant when one mate alignment contains other
+  --no-overlap       not concordant when mates overlap at all
+
+ BAM:
+  --align-paired-reads
+                     Bowtie2 will, by default, attempt to align unpaired BAM reads.
+                     Use this option to align paired-end reads instead.
+  --preserve-tags    Preserve tags from the original BAM record by
+                     appending them to the end of the corresponding SAM output.
+
+ Output:
+  -t/--time          print wall-clock time taken by search phases
+  --un <path>        write unpaired reads that didn't align to <path>
+  --al <path>        write unpaired reads that aligned at least once to <path>
+  --un-conc <path>   write pairs that didn't align concordantly to <path>
+  --al-conc <path>   write pairs that aligned concordantly at least once to <path>
+    (Note: for --un, --al, --un-conc, or --al-conc, add '-gz' to the option name, e.g.
+    --un-gz <path>, to gzip compress output, or add '-bz2' to bzip2 compress output.)
+  --quiet            print nothing to stderr except serious errors
+  --met-file <path>  send metrics to file at <path> (off)
+  --met-stderr       send metrics to stderr (off)
+  --met <int>        report internal counters & metrics every <int> secs (1)
+  --no-unal          suppress SAM records for unaligned reads
+  --no-head          suppress header lines, i.e. lines starting with @
+  --no-sq            suppress @SQ header lines
+  --rg-id <text>     set read group id, reflected in @RG line and RG:Z: opt field
+  --rg <text>        add <text> ("lab:value") to @RG line of SAM header.
+                     Note: @RG line only printed when --rg-id is set.
+  --omit-sec-seq     put '*' in SEQ and QUAL fields for secondary alignments.
+  --sam-no-qname-trunc
+                     Suppress standard behavior of truncating readname at first whitespace
+                     at the expense of generating non-standard SAM.
+  --xeq              Use '='/'X', instead of 'M,' to specify matches/mismatches in SAM record.
+  --soft-clipped-unmapped-tlen
+                     Exclude soft-clipped bases when reporting TLEN.
+  --sam-append-comment
+                     Append FASTA/FASTQ comment to SAM record.
+  --sam-opt-config <config>
+                     Use <config>, example '-MD,YP,-AS', to toggle SAM Optional fields.
+
+ Performance:
+  -p/--threads <int> number of alignment threads to launch (1)
+  --reorder          force SAM output order to match order of input reads
+  --mm               use memory-mapped I/O for index; many 'bowtie's can share
+
+ Other:
+  --qc-filter        filter out reads that are bad according to QSEQ filter
+  --seed <int>       seed for random number generator (0)
+  --non-deterministic
+                     seed rand. gen. arbitrarily instead of using read attributes
+  --version          print version information and quit
+  -h/--help          print this usage message
+(db_mito_mining_building) [davisee@rosalind-01 9726]$ seqkit --help
+SeqKit -- a cross-platform and ultrafast toolkit for FASTA/Q file manipulation
+
+Version: 2.12.0
+
+Author: Wei Shen <shenwei356@gmail.com>
+
+Documents  : http://bioinf.shenwei.me/seqkit
+Source code: https://github.com/shenwei356/seqkit
+Please cite: https://doi.org/10.1002/imt2.191
+
+
+Seqkit utilizes the pgzip (https://github.com/klauspost/pgzip) package to
+read and write gzip file, and the outputted gzip file would be slighty
+larger than files generated by GNU gzip.
+
+Seqkit writes gzip files very fast, much faster than the multi-threaded pigz,
+therefore there's no need to pipe the result to gzip/pigz.
+
+Seqkit also supports reading and writing xz (.xz) and zstd (.zst) formats since v2.2.0.
+Bzip2 format is supported since v2.4.0.
+
+Compression level:
+  format   range   default  comment
+  gzip     1-9     5        https://github.com/klauspost/pgzip sets 5 as the default value.
+  xz       NA      NA       https://github.com/ulikunitz/xz does not support.
+  zstd     1-4     2        roughly equals to zstd 1, 3, 7, 11, respectively.
+  bzip     1-9     6        https://github.com/dsnet/compress
+
+Usage:
+  seqkit [command]
+
+Commands for Basic Operation:
+  faidx           create the FASTA index file and extract subsequences
+  scat            real time recursive concatenation and streaming of fastx files
+  seq             transform sequences (extract ID, filter by length, remove gaps, reverse complement...)
+  sliding         extract subsequences in sliding windows
+  stats           simple statistics of FASTA/Q files
+  subseq          get subsequences by region/gtf/bed, including flanking sequences
+  translate       translate DNA/RNA to protein sequence (supporting ambiguous bases)
+  watch           monitoring and online histograms of sequence features
+
+Commands for Format Conversion:
+  convert         convert FASTQ quality encoding between Sanger, Solexa and Illumina
+  fa2fq           retrieve corresponding FASTQ records by a FASTA file
+  fq2fa           convert FASTQ to FASTA
+  fx2tab          convert FASTA/Q to tabular format (and length, GC content, average quality...)
+  tab2fx          convert tabular format to FASTA/Q format
+
+Commands for Searching:
+  amplicon        extract amplicon (or specific region around it) via primer(s)
+  fish            look for short sequences in larger sequences using local alignment
+  grep            search sequences by ID/name/sequence/sequence motifs, mismatch allowed
+  locate          locate subsequences/motifs, mismatch allowed
+
+Commands for Set Operation:
+  common          find common/shared sequences of multiple files by id/name/sequence
+  duplicate       duplicate sequences N times
+  head            print the first N FASTA/Q records, or leading records whose total length >= L
+  head-genome     print sequences of the first genome with common prefixes in name
+  pair            match up paired-end reads from two fastq files
+  range           print FASTA/Q records in a range (start:end)
+  rmdup           remove duplicated sequences by ID/name/sequence
+  sample          sample sequences by number or proportion
+  split           split sequences into files by id/seq region/size/parts (mainly for FASTA)
+  split2          split sequences into files by size/parts (FASTA, PE/SE FASTQ)
+
+Commands for Edit:
+  concat          concatenate sequences with the same ID from multiple files
+  mutate          edit sequence (point mutation, insertion, deletion)
+  rename          rename duplicated IDs
+  replace         replace name/sequence by regular expression
+  restart         reset start position for circular genome
+  sana            sanitize broken single line FASTQ files
+
+Commands for Ordering:
+  shuffle         shuffle sequences
+  sort            sort sequences by id/name/sequence/length
+
+Commands for BAM Processing:
+  bam             monitoring and online histograms of BAM record features
+
+Commands for Miscellaneous:
+  merge-slides    merge sliding windows generated from seqkit sliding
+  sum             compute message digest for all sequences in FASTA/Q files
+
+Additional Commands:
+  genautocomplete generate shell autocompletion script (bash|zsh|fish|powershell)
+  version         print version information and check for update
+
+Flags:
+      --alphabet-guess-seq-length int   length of sequence prefix of the first FASTA record based on
+                                        which seqkit guesses the sequence type (0 for whole seq)
+                                        (default 10000)
+      --compress-level int              compression level for gzip, zstd, xz and bzip2. type "seqkit -h"
+                                        for the range and default value for each format (default -1)
+  -h, --help                            help for seqkit
+      --id-ncbi                         FASTA head is NCBI-style, e.g. >gi|110645304|ref|NC_002516.2|
+                                        Pseud...
+      --id-regexp string                regular expression for parsing ID (default "^(\\S+)\\s?")
+  -X, --infile-list string              file of input files list (one file per line), if given, they are
+                                        appended to files from cli arguments
+  -w, --line-width int                  line width when outputting FASTA format (0 for no wrap) (default 60)
+  -o, --out-file string                 out file ("-" for stdout, suffix .gz for gzipped out) (default "-")
+      --quiet                           be quiet and do not show extra information
+  -t, --seq-type string                 sequence type (dna|rna|protein|unlimit|auto) (for auto, it
+                                        automatically detect by the first sequence) (default "auto")
+      --skip-file-check                 skip input file checking when given a file list if you believe
+                                        these files do exist
+  -j, --threads int                     number of CPUs. can also set with environment variable
+                                        SEQKIT_THREADS) (default 4)
+
+Use "seqkit [command] --help" for more information about a command.
+(db_mito_mining_building) [davisee@rosalind-01 9726]$ ls -lh
+total 81M
+-rw-r--r-- 1 davisee hpcusers  147 Nov 28 16:15 9726_metrics.csv
+-rw-r--r-- 1 davisee hpcusers    0 Jan 17 17:34 9726_mito_index
+-rw-r--r-- 1 davisee hpcusers 4.2M Jan 17 17:35 9726_mito_index.1.bt2
+-rw-r--r-- 1 davisee hpcusers 109K Jan 17 17:35 9726_mito_index.2.bt2
+-rw-r--r-- 1 davisee hpcusers  863 Jan 17 17:35 9726_mito_index.3.bt2
+-rw-r--r-- 1 davisee hpcusers 109K Jan 17 17:35 9726_mito_index.4.bt2
+-rw-r--r-- 1 davisee hpcusers 4.2M Jan 17 17:35 9726_mito_index.rev.1.bt2
+-rw-r--r-- 1 davisee hpcusers 109K Jan 17 17:35 9726_mito_index.rev.2.bt2
+-rw-r--r-- 1 davisee hpcusers  24M Nov 28 16:15 9726_mitogenomes.fna
+-rw-r--r-- 1 davisee hpcusers  24M Jan  8 12:40 9726_mitogenomes_clean.fna
+-rw-r--r-- 1 davisee hpcusers 443K Jan 17 17:23 9726_mitogenomes_clean.matched.fna
+-rw-r--r-- 1 davisee hpcusers  24M Jan 17 17:23 9726_mitogenomes_clean.unmatched.fna
+-rw-r--r-- 1 davisee hpcusers   19 Jan 17 17:22 refseq_accession_filter.txt
+(db_mito_mining_building) [davisee@rosalind-01 9726]$ seqkit fx2fq 9726_mitogenomes_clean.unmatched.fna > 9726_mined_mito.fq
+Error: unknown command "fx2fq" for "seqkit"
+
+Did you mean this?
+        fa2fq
+        fq2fa
+
+Run 'seqkit --help' for usage.
+(db_mito_mining_building) [davisee@rosalind-01 9726]$ seqkit fa2fq 9726_mitogenomes_clean.unmatched.fna > 9726_mined_mito.fq
+[ERRO] flag -f (--fasta-file) needed
+(db_mito_mining_building) [davisee@rosalind-01 9726]$ seqkit fa2fq -f 9726_mitogenomes_clean.unmatched.fna > 9726_mined_mito.fq
+[INFO] 7008 sequences loaded
+[ERRO] fastx: stdin not detected
+(db_mito_mining_building) [davisee@rosalind-01 9726]$ ls -lh
+total 81M
+-rw-r--r-- 1 davisee hpcusers  147 Nov 28 16:15 9726_metrics.csv
+-rw-r--r-- 1 davisee hpcusers    0 Jan 17 17:47 9726_mined_mito.fq
+-rw-r--r-- 1 davisee hpcusers    0 Jan 17 17:34 9726_mito_index
+-rw-r--r-- 1 davisee hpcusers 4.2M Jan 17 17:35 9726_mito_index.1.bt2
+-rw-r--r-- 1 davisee hpcusers 109K Jan 17 17:35 9726_mito_index.2.bt2
+-rw-r--r-- 1 davisee hpcusers  863 Jan 17 17:35 9726_mito_index.3.bt2
+-rw-r--r-- 1 davisee hpcusers 109K Jan 17 17:35 9726_mito_index.4.bt2
+-rw-r--r-- 1 davisee hpcusers 4.2M Jan 17 17:35 9726_mito_index.rev.1.bt2
+-rw-r--r-- 1 davisee hpcusers 109K Jan 17 17:35 9726_mito_index.rev.2.bt2
+-rw-r--r-- 1 davisee hpcusers  24M Nov 28 16:15 9726_mitogenomes.fna
+-rw-r--r-- 1 davisee hpcusers  24M Jan  8 12:40 9726_mitogenomes_clean.fna
+-rw-r--r-- 1 davisee hpcusers 443K Jan 17 17:23 9726_mitogenomes_clean.matched.fna
+-rw-r--r-- 1 davisee hpcusers  24M Jan 17 17:23 9726_mitogenomes_clean.unmatched.fna
+-rw-r--r-- 1 davisee hpcusers   19 Jan 17 17:22 refseq_accession_filter.txt
+
+
+
+##################### how I got the filtering to work :
+(ncbi_cli_downloads) [davisee@rosalind-01 34759]$ ls -lh
+total 5.3M
+-rw-r--r-- 1 davisee hpcusers  147 Nov 28 16:35 34759_metrics.csv
+-rw-r--r-- 1 davisee hpcusers  86K Jan 12 16:34 34759_mitogenes_clean.fas
+-rw-r--r-- 1 davisee hpcusers 188K Nov 28 16:35 34759_mitogenomes.fna
+-rw-r--r-- 1 davisee hpcusers 188K Jan  8 12:40 34759_mitogenomes_clean.fna
+-rw-r--r-- 1 davisee hpcusers 188K Jan 17 17:22 34759_mitogenomes_clean.unmatched.fna
+-rw-r--r-- 1 davisee hpcusers 103K Jan 12 16:35 34759_mitogenomes_only_clean.fas
+-rw-r--r-- 1 davisee hpcusers 4.5M Jan 10 10:25 alignment_34759.best.fas
+-rw-r--r-- 1 davisee hpcusers   19 Jan 17 17:17 refseq_accession_filter.txt
+(ncbi_cli_downloads) [davisee@rosalind-01 34759]$ cp refseq_accession_filter.txt ../9726
+(ncbi_cli_downloads) [davisee@rosalind-01 34759]$ ls -lh
+total 5.3M
+-rw-r--r-- 1 davisee hpcusers  147 Nov 28 16:35 34759_metrics.csv
+-rw-r--r-- 1 davisee hpcusers  86K Jan 12 16:34 34759_mitogenes_clean.fas
+-rw-r--r-- 1 davisee hpcusers 188K Nov 28 16:35 34759_mitogenomes.fna
+-rw-r--r-- 1 davisee hpcusers 188K Jan  8 12:40 34759_mitogenomes_clean.fna
+-rw-r--r-- 1 davisee hpcusers 188K Jan 17 17:22 34759_mitogenomes_clean.unmatched.fna
+-rw-r--r-- 1 davisee hpcusers 103K Jan 12 16:35 34759_mitogenomes_only_clean.fas
+-rw-r--r-- 1 davisee hpcusers 4.5M Jan 10 10:25 alignment_34759.best.fas
+-rw-r--r-- 1 davisee hpcusers   19 Jan 17 17:17 refseq_accession_filter.txt
+(ncbi_cli_downloads) [davisee@rosalind-01 34759]$ cd ../9726
+(ncbi_cli_downloads) [davisee@rosalind-01 9726]$ ls -lh
+total 48M
+-rw-r--r-- 1 davisee hpcusers 147 Nov 28 16:15 9726_metrics.csv
+-rw-r--r-- 1 davisee hpcusers 24M Nov 28 16:15 9726_mitogenomes.fna
+-rw-r--r-- 1 davisee hpcusers 24M Jan  8 12:40 9726_mitogenomes_clean.fna
+-rw-r--r-- 1 davisee hpcusers  19 Jan 17 17:22 refseq_accession_filter.txt
+(ncbi_cli_downloads) [davisee@rosalind-01 9726]$ in=9726_mitogenomes_clean.fna
+(ncbi_cli_downloads) [davisee@rosalind-01 9726]$ awk -v toks="refseq_accession_filter.txt" -v base="$(basename "$in" .fna)" '
+  BEGIN {
+    # Read tokens into array a[token]=1
+    while ((getline t < toks) > 0) {
+      sub(/^[[:space:]]+|[[:space:]]+$/, "", t)
+      if (t != "") a[t]=1
+    }
+    matched  = base ".matched.fna"
+    unmatched= base ".unmatched.fna"
+  }
+  # For every header, decide once for the whole record
+  /^>/ {
+    keep=0
+    for (k in a) if (index($0,k)) { keep=1; break }
+  }
+  { print > (keep ? matched : unmatched) }
+' "$in"
+(ncbi_cli_downloads) [davisee@rosalind-01 9726]$ ls -lh
+total 72M
+-rw-r--r-- 1 davisee hpcusers  147 Nov 28 16:15 9726_metrics.csv
+-rw-r--r-- 1 davisee hpcusers  24M Nov 28 16:15 9726_mitogenomes.fna
+-rw-r--r-- 1 davisee hpcusers  24M Jan  8 12:40 9726_mitogenomes_clean.fna
+-rw-r--r-- 1 davisee hpcusers 443K Jan 17 17:23 9726_mitogenomes_clean.matched.fna
+-rw-r--r-- 1 davisee hpcusers  24M Jan 17 17:23 9726_mitogenomes_clean.unmatched.fna
+-rw-r--r-- 1 davisee hpcusers   19 Jan 17 17:22 refseq_accession_filter.txt
+(ncbi_cli_downloads) [davisee@rosalind-01 9726]$ cat 9726_mitogenomes_clean.matched.fna | les
+-bash: les: command not found
+(ncbi_cli_downloads) [davisee@rosalind-01 9726]$ cat 9726_mitogenomes_clean.matched.fna | less
+
+
+#####NOTE: I need to run the filtering on the mitogenome.fna files in order to correctly convert them into a .fq file
+ 
+
+so far what i need to do is: 
+(1) unzip mined .fna files if zipped
+(2) filter out any reference genomes in file
+(3) if no reference genomes, flag seperate
+(3.5) find a suitable closest outgroup reference for a group
+(4) build indexes for each of the references by group
+(5) convert all .unmatched.fna to unmatched.fq with seqkit fa2fq
+(optional) run deduplication on *.unmatched.fq prior to running
+(6) run --sensitive-local-assignment on them
+
+
+########## 19.01.2026 ####################
+
+removed family 8015 from RAMS taxalist, because of the include of freshwater fish/ commerical fish species in the taxalist
+
+### also, testing stuff for (db_mito_mining_building) [davisee@dc7-a2-ru05 9726]$ ls
+9726_metrics.csv              9726_mitogenomes.unmatched.fna
+9726_mito_index               9726_mitogenomes_clean.fna
+9726_mitogenomes.fna          refseq_accession_filter.txt
+9726_mitogenomes.matched.fna
+(db_mito_mining_building) [davisee@dc7-a2-ru05 9726]$ seqkit seq -M 9726_mitoge                 nomes.unmatched.fna -o 9726_mitogenes_unmatched.fna
+Error: invalid argument "9726_mitogenomes.unmatched.fna" for "-M, --max-len" fl                 ag: strconv.ParseInt: parsing "9726_mitogenomes.unmatched.fna": invalid syntax
+Usage:
+  seqkit seq [flags]
+
+Flags:
+  -k, --color                 colorize sequences - to be piped into "less -R"
+  -p, --complement            complement sequence, flag '-v' is recommended to                  switch on
+      --dna2rna               DNA to RNA
+  -G, --gap-letters string    gap letters to be removed with -g/--remove-gaps (                 default "- \t.")
+  -h, --help                  help for seq
+  -l, --lower-case            print sequences in lower case
+  -M, --max-len int           only print sequences shorter than or equal to the                  maximum length (-1 for
+                              no limit) (default -1)
+  -R, --max-qual float        only print sequences with average quality less th                 an this limit (-1 for no
+                              limit) (default -1)
+  -m, --min-len int           only print sequences longer than or equal to the                  minimum length (-1 for no
+                              limit) (default -1)
+  -Q, --min-qual float        only print sequences with average quality greater                  or equal than this limit
+                              (-1 for no limit) (default -1)
+  -n, --name                  only print names/sequence headers
+  -i, --only-id               print IDs instead of full headers
+  -q, --qual                  only print qualities
+  -b, --qual-ascii-base int   ASCII BASE, 33 for Phred+33 (default 33)
+  -g, --remove-gaps           remove gaps letters set by -G/--gap-letters, e.g.                 , spaces, tabs, and
+                              dashes (gaps "-" in aligned sequences)
+  -r, --reverse               reverse sequence
+      --rna2dna               RNA to DNA
+  -s, --seq                   only print sequences
+  -u, --upper-case            print sequences in upper case
+  -v, --validate-seq          validate bases according to the alphabet
+
+Global Flags:
+      --alphabet-guess-seq-length int   length of sequence prefix of the first                  FASTA record based on
+                                        which seqkit guesses the sequence type                  (0 for whole seq)
+                                        (default 10000)
+      --compress-level int              compression level for gzip, zstd, xz an                 d bzip2. type "seqkit -h"
+                                        for the range and default value for eac                 h format (default -1)
+      --id-ncbi                         FASTA head is NCBI-style, e.g. >gi|1106                 45304|ref|NC_002516.2|
+                                        Pseud...
+      --id-regexp string                regular expression for parsing ID (defa                 ult "^(\\S+)\\s?")
+  -X, --infile-list string              file of input files list (one file per                  line), if given, they are
+                                        appended to files from cli arguments
+  -w, --line-width int                  line width when outputting FASTA format                  (0 for no wrap) (default 60)
+  -o, --out-file string                 out file ("-" for stdout, suffix .gz fo                 r gzipped out) (default "-")
+      --quiet                           be quiet and do not show extra informat                 ion
+  -t, --seq-type string                 sequence type (dna|rna|protein|unlimit|                 auto) (for auto, it
+                                        automatically detect by the first seque                 nce) (default "auto")
+      --skip-file-check                 skip input file checking when given a f                 ile list if you believe
+                                        these files do exist
+  -j, --threads int                     number of CPUs. can also set with envir                 onment variable
+                                        SEQKIT_THREADS) (default 4)
+
+invalid argument "9726_mitogenomes.unmatched.fna" for "-M, --max-len" flag: str                 conv.ParseInt: parsing "9726_mitogenomes.unmatched.fna": invalid syntax
+(db_mito_mining_building) [davisee@dc7-a2-ru05 9726]$ seqkit seq -M 5000 9726_m                 itogenomes.unmatched.fna -o 9726_mitogenes_unmatched.fna
+[WARN] you may switch on flag -g/--remove-gaps to remove spaces
+(db_mito_mining_building) [davisee@dc7-a2-ru05 9726]$ ls -lh
+total 76M
+-rw-r--r-- 1 davisee hpcusers  147 Nov 28 16:15 9726_metrics.csv
+-rw-r--r-- 1 davisee hpcusers    0 Jan 17 17:34 9726_mito_index
+-rw-r--r-- 1 davisee hpcusers 3.7M Jan 19 11:32 9726_mitogenes_unmatched.fna
+-rw-r--r-- 1 davisee hpcusers  24M Nov 28 16:15 9726_mitogenomes.fna
+-rw-r--r-- 1 davisee hpcusers 442K Jan 19 11:09 9726_mitogenomes.matched.fna
+-rw-r--r-- 1 davisee hpcusers  24M Jan 19 11:09 9726_mitogenomes.unmatched.fna
+-rw-r--r-- 1 davisee hpcusers  24M Jan  8 12:40 9726_mitogenomes_clean.fna
+-rw-r--r-- 1 davisee hpcusers   19 Jan 17 17:22 refseq_accession_filter.txt
+(db_mito_mining_building) [davisee@dc7-a2-ru05 9726]$ seqkit fa2fq 9726_mitogen                 es_unmatched.fna > 9726_mitogenes.fq
+[ERRO] flag -f (--fasta-file) needed
+(db_mito_mining_building) [davisee@dc7-a2-ru05 9726]$ seqkit fa2fq -f 9726_mito                 genes_unmatched.fna > 9726_mitogenes.fq
+[INFO] 5755 sequences loaded
+[ERRO] fastx: stdin not detected
+(db_mito_mining_building) [davisee@dc7-a2-ru05 9726]$ ls -lh
+total 76M
+-rw-r--r-- 1 davisee hpcusers  147 Nov 28 16:15 9726_metrics.csv
+-rw-r--r-- 1 davisee hpcusers    0 Jan 17 17:34 9726_mito_index
+-rw-r--r-- 1 davisee hpcusers    0 Jan 19 11:39 9726_mitogenes.fq
+-rw-r--r-- 1 davisee hpcusers 3.7M Jan 19 11:32 9726_mitogenes_unmatched.fna
+-rw-r--r-- 1 davisee hpcusers  24M Nov 28 16:15 9726_mitogenomes.fna
+-rw-r--r-- 1 davisee hpcusers 442K Jan 19 11:09 9726_mitogenomes.matched.fna
+-rw-r--r-- 1 davisee hpcusers  24M Jan 19 11:09 9726_mitogenomes.unmatched.fna
+-rw-r--r-- 1 davisee hpcusers  24M Jan  8 12:40 9726_mitogenomes_clean.fna
+-rw-r--r-- 1 davisee hpcusers   19 Jan 17 17:22 refseq_accession_filter.txt
+(db_mito_mining_building) [davisee@dc7-a2-ru05 9726]$ bowtie-build 9726_mitogen                 omes.matched.fna 9726_index
+-bash: bowtie-build: command not found
+(db_mito_mining_building) [davisee@dc7-a2-ru05 9726]$ bowtie2-build 9726_mitoge                 nomes.matched.fna 9726_index
+Settings:
+  Output files: "9726_index.*.bt2"
+  Line rate: 6 (line is 64 bytes)
+  Lines per side: 1 (side is 64 bytes)
+  Offset rate: 4 (one in 16)
+  FTable chars: 10
+  Strings: unpacked
+  Max bucket size: default
+  Max bucket size, sqrt multiplier: default
+  Max bucket size, len divisor: 4
+  Difference-cover sample period: 1024
+  Endianness: little
+  Actual local endianness: little
+  Sanity checking: disabled
+  Assertions: disabled
+  Random seed: 0
+  Sizeofs: void*:8, int:4, long:8, size_t:8
+Input files DNA, FASTA:
+  9726_mitogenomes.matched.fna
+Building a SMALL index
+Reading reference sizes
+  Time reading reference sizes: 00:00:00
+Calculating joined length
+Writing header
+Reserving space for joined string
+Joining reference sequences
+  Time to join reference sequences: 00:00:00
+bmax according to bmaxDivN setting: 110529
+Using parameters --bmax 82897 --dcv 1024
+  Doing ahead-of-time memory usage test
+  Passed!  Constructing with these parameters: --bmax 82897 --dcv 1024
+Constructing suffix-array element generator
+Building DifferenceCoverSample
+  Building sPrime
+  Building sPrimeOrder
+  V-Sorting samples
+  V-Sorting samples time: 00:00:00
+  Allocating rank array
+  Ranking v-sort output
+  Ranking v-sort output time: 00:00:00
+  Invoking Larsson-Sadakane on ranks
+  Invoking Larsson-Sadakane on ranks time: 00:00:00
+  Sanity-checking and returning
+Building samples
+Reserving space for 12 sample suffixes
+Generating random suffixes
+QSorting 12 sample offsets, eliminating duplicates
+QSorting sample offsets, eliminating duplicates time: 00:00:00
+Multikey QSorting 12 samples
+  (Using difference cover)
+  Multikey QSorting samples time: 00:00:00
+Calculating bucket sizes
+Splitting and merging
+  Splitting and merging time: 00:00:00
+Split 2, merged 7; iterating...
+Splitting and merging
+  Splitting and merging time: 00:00:00
+Avg bucket size: 63158.7 (target: 82896)
+Converting suffix-array elements to index image
+Allocating ftab, absorbFtab
+Entering Ebwt loop
+Getting block 1 of 7
+  Reserving size (82897) for bucket 1
+  Calculating Z arrays for bucket 1
+  Entering block accumulator loop for bucket 1:
+  bucket 1: 10%
+  bucket 1: 20%
+  bucket 1: 30%
+  bucket 1: 40%
+  bucket 1: 50%
+  bucket 1: 60%
+  bucket 1: 70%
+  bucket 1: 80%
+  bucket 1: 90%
+  bucket 1: 100%
+  Sorting block of length 37293 for bucket 1
+  (Using difference cover)
+  Sorting block time: 00:00:00
+Returning block of 37294 for bucket 1
+Getting block 2 of 7
+  Reserving size (82897) for bucket 2
+  Calculating Z arrays for bucket 2
+  Entering block accumulator loop for bucket 2:
+  bucket 2: 10%
+  bucket 2: 20%
+  bucket 2: 30%
+  bucket 2: 40%
+  bucket 2: 50%
+  bucket 2: 60%
+  bucket 2: 70%
+  bucket 2: 80%
+  bucket 2: 90%
+  bucket 2: 100%
+  Sorting block of length 81833 for bucket 2
+  (Using difference cover)
+  Sorting block time: 00:00:00
+Returning block of 81834 for bucket 2
+Getting block 3 of 7
+  Reserving size (82897) for bucket 3
+  Calculating Z arrays for bucket 3
+  Entering block accumulator loop for bucket 3:
+  bucket 3: 10%
+  bucket 3: 20%
+  bucket 3: 30%
+  bucket 3: 40%
+  bucket 3: 50%
+  bucket 3: 60%
+  bucket 3: 70%
+  bucket 3: 80%
+  bucket 3: 90%
+  bucket 3: 100%
+  Sorting block of length 42310 for bucket 3
+  (Using difference cover)
+  Sorting block time: 00:00:00
+Returning block of 42311 for bucket 3
+Getting block 4 of 7
+  Reserving size (82897) for bucket 4
+  Calculating Z arrays for bucket 4
+  Entering block accumulator loop for bucket 4:
+  bucket 4: 10%
+  bucket 4: 20%
+  bucket 4: 30%
+  bucket 4: 40%
+  bucket 4: 50%
+  bucket 4: 60%
+  bucket 4: 70%
+  bucket 4: 80%
+  bucket 4: 90%
+  bucket 4: 100%
+  Sorting block of length 78763 for bucket 4
+  (Using difference cover)
+  Sorting block time: 00:00:00
+Returning block of 78764 for bucket 4
+Getting block 5 of 7
+  Reserving size (82897) for bucket 5
+  Calculating Z arrays for bucket 5
+  Entering block accumulator loop for bucket 5:
+  bucket 5: 10%
+  bucket 5: 20%
+  bucket 5: 30%
+  bucket 5: 40%
+  bucket 5: 50%
+  bucket 5: 60%
+  bucket 5: 70%
+  bucket 5: 80%
+  bucket 5: 90%
+  bucket 5: 100%
+  Sorting block of length 65272 for bucket 5
+  (Using difference cover)
+  Sorting block time: 00:00:00
+Returning block of 65273 for bucket 5
+Getting block 6 of 7
+  Reserving size (82897) for bucket 6
+  Calculating Z arrays for bucket 6
+  Entering block accumulator loop for bucket 6:
+  bucket 6: 10%
+  bucket 6: 20%
+  bucket 6: 30%
+  bucket 6: 40%
+  bucket 6: 50%
+  bucket 6: 60%
+  bucket 6: 70%
+  bucket 6: 80%
+  bucket 6: 90%
+  bucket 6: 100%
+  Sorting block of length 57106 for bucket 6
+  (Using difference cover)
+  Sorting block time: 00:00:00
+Returning block of 57107 for bucket 6
+Getting block 7 of 7
+  Reserving size (82897) for bucket 7
+  Calculating Z arrays for bucket 7
+  Entering block accumulator loop for bucket 7:
+  bucket 7: 10%
+  bucket 7: 20%
+  bucket 7: 30%
+  bucket 7: 40%
+  bucket 7: 50%
+  bucket 7: 60%
+  bucket 7: 70%
+  bucket 7: 80%
+  bucket 7: 90%
+  bucket 7: 100%
+  Sorting block of length 79534 for bucket 7
+  (Using difference cover)
+  Sorting block time: 00:00:00
+Returning block of 79535 for bucket 7
+Exited Ebwt loop
+fchr[A]: 0
+fchr[C]: 146231
+fchr[G]: 261964
+fchr[T]: 318287
+fchr[$]: 442117
+Exiting Ebwt::buildToDisk()
+Returning from initFromVector
+Wrote 4344995 bytes to primary EBWT file: 9726_index.1.bt2.tmp
+Wrote 110536 bytes to secondary EBWT file: 9726_index.2.bt2.tmp
+Re-opening _in1 and _in2 as input streams
+Returning from Ebwt constructor
+Headers:
+    len: 442117
+    bwtLen: 442118
+    sz: 110530
+    bwtSz: 110530
+    lineRate: 6
+    offRate: 4
+    offMask: 0xfffffff0
+    ftabChars: 10
+    eftabLen: 20
+    eftabSz: 80
+    ftabLen: 1048577
+    ftabSz: 4194308
+    offsLen: 27633
+    offsSz: 110532
+    lineSz: 64
+    sideSz: 64
+    sideBwtSz: 48
+    sideBwtLen: 192
+    numSides: 2303
+    numLines: 2303
+    ebwtTotLen: 147392
+    ebwtTotSz: 147392
+    color: 0
+    reverse: 0
+Total time for call to driver() for forward index: 00:00:00
+Reading reference sizes
+  Time reading reference sizes: 00:00:00
+Calculating joined length
+Writing header
+Reserving space for joined string
+Joining reference sequences
+  Time to join reference sequences: 00:00:00
+  Time to reverse reference sequence: 00:00:00
+bmax according to bmaxDivN setting: 110529
+Using parameters --bmax 82897 --dcv 1024
+  Doing ahead-of-time memory usage test
+  Passed!  Constructing with these parameters: --bmax 82897 --dcv 1024
+Constructing suffix-array element generator
+Building DifferenceCoverSample
+  Building sPrime
+  Building sPrimeOrder
+  V-Sorting samples
+  V-Sorting samples time: 00:00:00
+  Allocating rank array
+  Ranking v-sort output
+  Ranking v-sort output time: 00:00:00
+  Invoking Larsson-Sadakane on ranks
+  Invoking Larsson-Sadakane on ranks time: 00:00:00
+  Sanity-checking and returning
+Building samples
+Reserving space for 12 sample suffixes
+Generating random suffixes
+QSorting 12 sample offsets, eliminating duplicates
+QSorting sample offsets, eliminating duplicates time: 00:00:00
+Multikey QSorting 12 samples
+  (Using difference cover)
+  Multikey QSorting samples time: 00:00:00
+Calculating bucket sizes
+Splitting and merging
+  Splitting and merging time: 00:00:00
+Split 2, merged 5; iterating...
+Splitting and merging
+  Splitting and merging time: 00:00:00
+Avg bucket size: 55263.8 (target: 82896)
+Converting suffix-array elements to index image
+Allocating ftab, absorbFtab
+Entering Ebwt loop
+Getting block 1 of 8
+  Reserving size (82897) for bucket 1
+  Calculating Z arrays for bucket 1
+  Entering block accumulator loop for bucket 1:
+  bucket 1: 10%
+  bucket 1: 20%
+  bucket 1: 30%
+  bucket 1: 40%
+  bucket 1: 50%
+  bucket 1: 60%
+  bucket 1: 70%
+  bucket 1: 80%
+  bucket 1: 90%
+  bucket 1: 100%
+  Sorting block of length 46700 for bucket 1
+  (Using difference cover)
+  Sorting block time: 00:00:00
+Returning block of 46701 for bucket 1
+Getting block 2 of 8
+  Reserving size (82897) for bucket 2
+  Calculating Z arrays for bucket 2
+  Entering block accumulator loop for bucket 2:
+  bucket 2: 10%
+  bucket 2: 20%
+  bucket 2: 30%
+  bucket 2: 40%
+  bucket 2: 50%
+  bucket 2: 60%
+  bucket 2: 70%
+  bucket 2: 80%
+  bucket 2: 90%
+  bucket 2: 100%
+  Sorting block of length 77810 for bucket 2
+  (Using difference cover)
+  Sorting block time: 00:00:00
+Returning block of 77811 for bucket 2
+Getting block 3 of 8
+  Reserving size (82897) for bucket 3
+  Calculating Z arrays for bucket 3
+  Entering block accumulator loop for bucket 3:
+  bucket 3: 10%
+  bucket 3: 20%
+  bucket 3: 30%
+  bucket 3: 40%
+  bucket 3: 50%
+  bucket 3: 60%
+  bucket 3: 70%
+  bucket 3: 80%
+  bucket 3: 90%
+  bucket 3: 100%
+  Sorting block of length 36451 for bucket 3
+  (Using difference cover)
+  Sorting block time: 00:00:00
+Returning block of 36452 for bucket 3
+Getting block 4 of 8
+  Reserving size (82897) for bucket 4
+  Calculating Z arrays for bucket 4
+  Entering block accumulator loop for bucket 4:
+  bucket 4: 10%
+  bucket 4: 20%
+  bucket 4: 30%
+  bucket 4: 40%
+  bucket 4: 50%
+  bucket 4: 60%
+  bucket 4: 70%
+  bucket 4: 80%
+  bucket 4: 90%
+  bucket 4: 100%
+  Sorting block of length 77418 for bucket 4
+  (Using difference cover)
+  Sorting block time: 00:00:00
+Returning block of 77419 for bucket 4
+Getting block 5 of 8
+  Reserving size (82897) for bucket 5
+  Calculating Z arrays for bucket 5
+  Entering block accumulator loop for bucket 5:
+  bucket 5: 10%
+  bucket 5: 20%
+  bucket 5: 30%
+  bucket 5: 40%
+  bucket 5: 50%
+  bucket 5: 60%
+  bucket 5: 70%
+  bucket 5: 80%
+  bucket 5: 90%
+  bucket 5: 100%
+  Sorting block of length 45601 for bucket 5
+  (Using difference cover)
+  Sorting block time: 00:00:00
+Returning block of 45602 for bucket 5
+Getting block 6 of 8
+  Reserving size (82897) for bucket 6
+  Calculating Z arrays for bucket 6
+  Entering block accumulator loop for bucket 6:
+  bucket 6: 10%
+  bucket 6: 20%
+  bucket 6: 30%
+  bucket 6: 40%
+  bucket 6: 50%
+  bucket 6: 60%
+  bucket 6: 70%
+  bucket 6: 80%
+  bucket 6: 90%
+  bucket 6: 100%
+  Sorting block of length 65738 for bucket 6
+  (Using difference cover)
+  Sorting block time: 00:00:00
+Returning block of 65739 for bucket 6
+Getting block 7 of 8
+  Reserving size (82897) for bucket 7
+  Calculating Z arrays for bucket 7
+  Entering block accumulator loop for bucket 7:
+  bucket 7: 10%
+  bucket 7: 20%
+  bucket 7: 30%
+  bucket 7: 40%
+  bucket 7: 50%
+  bucket 7: 60%
+  bucket 7: 70%
+  bucket 7: 80%
+  bucket 7: 90%
+  bucket 7: 100%
+  Sorting block of length 76669 for bucket 7
+  (Using difference cover)
+  Sorting block time: 00:00:00
+Returning block of 76670 for bucket 7
+Getting block 8 of 8
+  Reserving size (82897) for bucket 8
+  Calculating Z arrays for bucket 8
+  Entering block accumulator loop for bucket 8:
+  bucket 8: 10%
+  bucket 8: 20%
+  bucket 8: 30%
+  bucket 8: 40%
+  bucket 8: 50%
+  bucket 8: 60%
+  bucket 8: 70%
+  bucket 8: 80%
+  bucket 8: 90%
+  bucket 8: 100%
+  Sorting block of length 15723 for bucket 8
+  (Using difference cover)
+  Sorting block time: 00:00:00
+Returning block of 15724 for bucket 8
+Exited Ebwt loop
+fchr[A]: 0
+fchr[C]: 146231
+fchr[G]: 261964
+fchr[T]: 318287
+fchr[$]: 442117
+Exiting Ebwt::buildToDisk()
+Returning from initFromVector
+Wrote 4344995 bytes to primary EBWT file: 9726_index.rev.1.bt2.tmp
+Wrote 110536 bytes to secondary EBWT file: 9726_index.rev.2.bt2.tmp
+Re-opening _in1 and _in2 as input streams
+Returning from Ebwt constructor
+Headers:
+    len: 442117
+    bwtLen: 442118
+    sz: 110530
+    bwtSz: 110530
+    lineRate: 6
+    offRate: 4
+    offMask: 0xfffffff0
+    ftabChars: 10
+    eftabLen: 20
+    eftabSz: 80
+    ftabLen: 1048577
+    ftabSz: 4194308
+    offsLen: 27633
+    offsSz: 110532
+    lineSz: 64
+    sideSz: 64
+    sideBwtSz: 48
+    sideBwtLen: 192
+    numSides: 2303
+    numLines: 2303
+    ebwtTotLen: 147392
+    ebwtTotSz: 147392
+    color: 0
+    reverse: 1
+Total time for backward call to driver() for mirror index: 00:00:02
+Renaming 9726_index.3.bt2.tmp to 9726_index.3.bt2
+Renaming 9726_index.4.bt2.tmp to 9726_index.4.bt2
+Renaming 9726_index.1.bt2.tmp to 9726_index.1.bt2
+Renaming 9726_index.2.bt2.tmp to 9726_index.2.bt2
+Renaming 9726_index.rev.1.bt2.tmp to 9726_index.rev.1.bt2
+Renaming 9726_index.rev.2.bt2.tmp to 9726_index.rev.2.bt2
+(db_mito_mining_building) [davisee@dc7-a2-ru05 9726]$ ls -lh
+total 84M
+-rw-r--r-- 1 davisee hpcusers 4.2M Jan 19 11:41 9726_index.1.bt2
+-rw-r--r-- 1 davisee hpcusers 108K Jan 19 11:41 9726_index.2.bt2
+-rw-r--r-- 1 davisee hpcusers  854 Jan 19 11:41 9726_index.3.bt2
+-rw-r--r-- 1 davisee hpcusers 108K Jan 19 11:41 9726_index.4.bt2
+-rw-r--r-- 1 davisee hpcusers 4.2M Jan 19 11:41 9726_index.rev.1.bt2
+-rw-r--r-- 1 davisee hpcusers 108K Jan 19 11:41 9726_index.rev.2.bt2
+-rw-r--r-- 1 davisee hpcusers  147 Nov 28 16:15 9726_metrics.csv
+-rw-r--r-- 1 davisee hpcusers    0 Jan 17 17:34 9726_mito_index
+-rw-r--r-- 1 davisee hpcusers    0 Jan 19 11:39 9726_mitogenes.fq
+-rw-r--r-- 1 davisee hpcusers 3.7M Jan 19 11:32 9726_mitogenes_unmatched.fna
+-rw-r--r-- 1 davisee hpcusers  24M Nov 28 16:15 9726_mitogenomes.fna
+-rw-r--r-- 1 davisee hpcusers 442K Jan 19 11:09 9726_mitogenomes.matched.fna
+-rw-r--r-- 1 davisee hpcusers  24M Jan 19 11:09 9726_mitogenomes.unmatched.fna
+-rw-r--r-- 1 davisee hpcusers  24M Jan  8 12:40 9726_mitogenomes_clean.fna
+-rw-r--r-- 1 davisee hpcusers   19 Jan 17 17:22 refseq_accession_filter.txt
+(db_mito_mining_building) [davisee@dc7-a2-ru05 9726]$ bowtie --help
+-bash: bowtie: command not found
+(db_mito_mining_building) [davisee@dc7-a2-ru05 9726]$ bowtie2 --help
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+        LANGUAGE = (unset),
+        LC_ALL = (unset),
+        LANG = "C.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+Bowtie 2 version 2.5.4 by Ben Langmead (langmea@cs.jhu.edu, www.cs.jhu.edu/~lan                 gmea)
+Usage:
+  bowtie2 [options]* -x <bt2-idx> {-1 <m1> -2 <m2> | -U <r> | --interleaved <i>                  | -b <bam>} [-S <sam>]
+
+  <bt2-idx>  Index filename prefix (minus trailing .X.bt2).
+             NOTE: Bowtie 1 and Bowtie 2 indexes are not compatible.
+  <m1>       Files with #1 mates, paired with files in <m2>.
+             Could be gzip'ed (extension: .gz) or bzip2'ed (extension: .bz2).
+  <m2>       Files with #2 mates, paired with files in <m1>.
+             Could be gzip'ed (extension: .gz) or bzip2'ed (extension: .bz2).
+  <r>        Files with unpaired reads.
+             Could be gzip'ed (extension: .gz) or bzip2'ed (extension: .bz2).
+  <i>        Files with interleaved paired-end FASTQ/FASTA reads
+             Could be gzip'ed (extension: .gz) or bzip2'ed (extension: .bz2).
+  <bam>      Files are unaligned BAM sorted by read name.
+  <sam>      File for SAM output (default: stdout)
+
+  <m1>, <m2>, <r> can be comma-separated lists (no whitespace) and can be
+  specified many times.  E.g. '-U file1.fq,file2.fq -U file3.fq'.
+
+Options (defaults in parentheses):
+
+ Input:
+  -q                 query input files are FASTQ .fq/.fastq (default)
+  --tab5             query input files are TAB5 .tab5
+  --tab6             query input files are TAB6 .tab6
+  --qseq             query input files are in Illumina's qseq format
+  -f                 query input files are (multi-)FASTA .fa/.mfa
+  -r                 query input files are raw one-sequence-per-line
+  -F k:<int>,i:<int> query input files are continuous FASTA where reads
+                     are substrings (k-mers) extracted from the FASTA file
+                     and aligned at offsets 1, 1+i, 1+2i ... end of reference
+  -c                 <m1>, <m2>, <r> are sequences themselves, not files
+  -s/--skip <int>    skip the first <int> reads/pairs in the input (none)
+  -u/--upto <int>    stop after first <int> reads/pairs (no limit)
+  -5/--trim5 <int>   trim <int> bases from 5'/left end of reads (0)
+  -3/--trim3 <int>   trim <int> bases from 3'/right end of reads (0)
+  --trim-to [3:|5:]<int> trim reads exceeding <int> bases from either 3' or 5'                  end
+                     If the read end is not specified then it defaults to 3 (0)
+  --phred33          qualities are Phred+33 (default)
+  --phred64          qualities are Phred+64
+  --int-quals        qualities encoded as space-delimited integers
+
+ Presets:                 Same as:
+  For --end-to-end:
+   --very-fast            -D 5 -R 1 -N 0 -L 22 -i S,0,2.50
+   --fast                 -D 10 -R 2 -N 0 -L 22 -i S,0,2.50
+   --sensitive            -D 15 -R 2 -N 0 -L 22 -i S,1,1.15 (default)
+   --very-sensitive       -D 20 -R 3 -N 0 -L 20 -i S,1,0.50
+
+  For --local:
+   --very-fast-local      -D 5 -R 1 -N 0 -L 25 -i S,1,2.00
+   --fast-local           -D 10 -R 2 -N 0 -L 22 -i S,1,1.75
+   --sensitive-local      -D 15 -R 2 -N 0 -L 20 -i S,1,0.75 (default)
+   --very-sensitive-local -D 20 -R 3 -N 0 -L 20 -i S,1,0.50
+
+ Alignment:
+  -N <int>           max # mismatches in seed alignment; can be 0 or 1 (0)
+  -L <int>           length of seed substrings; must be >3, <32 (22)
+  -i <func>          interval between seed substrings w/r/t read len (S,1,1.15)
+  --n-ceil <func>    func for max # non-A/C/G/Ts permitted in aln (L,0,0.15)
+  --dpad <int>       include <int> extra ref chars on sides of DP table (15)
+  --gbar <int>       disallow gaps within <int> nucs of read extremes (4)
+  --ignore-quals     treat all quality values as 30 on Phred scale (off)
+  --nofw             do not align forward (original) version of read (off)
+  --norc             do not align reverse-complement version of read (off)
+  --no-1mm-upfront   do not allow 1 mismatch alignments before attempting to
+                     scan for the optimal seeded alignments
+  --end-to-end       entire read must align; no clipping (on)
+   OR
+  --local            local alignment; ends might be soft clipped (off)
+
+ Scoring:
+  --ma <int>         match bonus (0 for --end-to-end, 2 for --local)
+  --mp <int>         max penalty for mismatch; lower qual = lower penalty (6)
+  --np <int>         penalty for non-A/C/G/Ts in read/ref (1)
+  --rdg <int>,<int>  read gap open, extend penalties (5,3)
+  --rfg <int>,<int>  reference gap open, extend penalties (5,3)
+  --score-min <func> min acceptable alignment score w/r/t read length
+                     (G,20,8 for local, L,-0.6,-0.6 for end-to-end)
+
+ Reporting:
+  (default)          look for multiple alignments, report best, with MAPQ
+   OR
+  -k <int>           report up to <int> alns per read; MAPQ not meaningful
+   OR
+  -a/--all           report all alignments; very slow, MAPQ not meaningful
+
+ Effort:
+  -D <int>           give up extending after <int> failed extends in a row (15)
+  -R <int>           for reads w/ repetitive seeds, try <int> sets of seeds (2)
+
+ Paired-end:
+  -I/--minins <int>  minimum fragment length (0)
+  -X/--maxins <int>  maximum fragment length (500)
+  --fr/--rf/--ff     -1, -2 mates align fw/rev, rev/fw, fw/fw (--fr)
+  --no-mixed         suppress unpaired alignments for paired reads
+  --no-discordant    suppress discordant alignments for paired reads
+  --dovetail         concordant when mates extend past each other
+  --no-contain       not concordant when one mate alignment contains other
+  --no-overlap       not concordant when mates overlap at all
+
+ BAM:
+  --align-paired-reads
+                     Bowtie2 will, by default, attempt to align unpaired BAM re                 ads.
+                     Use this option to align paired-end reads instead.
+  --preserve-tags    Preserve tags from the original BAM record by
+                     appending them to the end of the corresponding SAM output.
+
+ Output:
+  -t/--time          print wall-clock time taken by search phases
+  --un <path>        write unpaired reads that didn't align to <path>
+  --al <path>        write unpaired reads that aligned at least once to <path>
+  --un-conc <path>   write pairs that didn't align concordantly to <path>
+  --al-conc <path>   write pairs that aligned concordantly at least once to <pa                 th>
+    (Note: for --un, --al, --un-conc, or --al-conc, add '-gz' to the option nam                 e, e.g.
+    --un-gz <path>, to gzip compress output, or add '-bz2' to bzip2 compress ou                 tput.)
+  --quiet            print nothing to stderr except serious errors
+  --met-file <path>  send metrics to file at <path> (off)
+  --met-stderr       send metrics to stderr (off)
+  --met <int>        report internal counters & metrics every <int> secs (1)
+  --no-unal          suppress SAM records for unaligned reads
+  --no-head          suppress header lines, i.e. lines starting with @
+  --no-sq            suppress @SQ header lines
+  --rg-id <text>     set read group id, reflected in @RG line and RG:Z: opt fie                 ld
+  --rg <text>        add <text> ("lab:value") to @RG line of SAM header.
+                     Note: @RG line only printed when --rg-id is set.
+  --omit-sec-seq     put '*' in SEQ and QUAL fields for secondary alignments.
+  --sam-no-qname-trunc
+                     Suppress standard behavior of truncating readname at first                  whitespace
+                     at the expense of generating non-standard SAM.
+  --xeq              Use '='/'X', instead of 'M,' to specify matches/mismatches                  in SAM record.
+  --soft-clipped-unmapped-tlen
+                     Exclude soft-clipped bases when reporting TLEN.
+  --sam-append-comment
+                     Append FASTA/FASTQ comment to SAM record.
+  --sam-opt-config <config>
+                     Use <config>, example '-MD,YP,-AS', to toggle SAM Optional                  fields.
+
+ Performance:
+  -p/--threads <int> number of alignment threads to launch (1)
+  --reorder          force SAM output order to match order of input reads
+  --mm               use memory-mapped I/O for index; many 'bowtie's can share
+
+ Other:
+  --qc-filter        filter out reads that are bad according to QSEQ filter
+  --seed <int>       seed for random number generator (0)
+  --non-deterministic
+                     seed rand. gen. arbitrarily instead of using read attribut                 es
+  --version          print version information and quit
+  -h/--help          print this usage message
+(db_mitob_mito__mito_mmitob_mitob_mitob_mitob_mitob_mitob_mitob_mitob_mit                       local -x 9726_index -q 9726_mitogenes.fq -ru05 9726]$ bowtie2 --very-sensitive-
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:bowtie2 --very-sensitive-l
+        LANGUAGE = (unset),
+        LC_ALL = (unset),
+        LANG = "C.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+Unable to read file magic number
+0 reads
+0.00% overall alignment rate
+@HD     VN:1.5  SO:unsorted     GO:query
+@SQ     SN:NC_035426.1  LN:16392
+@SQ     SN:NC_050265.1  LN:16384
+@SQ     SN:NC_022805.1  LN:16388
+@SQ     SN:NC_019591.1  LN:16389
+@SQ     SN:NC_045404.1  LN:16384
+@SQ     SN:NC_012057.1  LN:16388
+@SQ     SN:NC_019589.1  LN:16388
+@SQ     SN:NC_037848.1  LN:16390
+@SQ     SN:NC_019588.1  LN:16387
+@SQ     SN:NC_060612.1  LN:16386
+@SQ     SN:NC_060611.1  LN:16384
+@SQ     SN:NC_012061.1  LN:16385
+@SQ     SN:NC_020696.1  LN:16371
+@SQ     SN:NC_060610.1  LN:16374
+@SQ     SN:NC_012062.1  LN:16386
+@SQ     SN:NC_019577.1  LN:16392
+@SQ     SN:NC_012058.1  LN:16385
+@SQ     SN:NC_019590.1  LN:16383
+@SQ     SN:NC_042761.1  LN:16386
+@SQ     SN:NC_019578.2  LN:16390
+@SQ     SN:NC_083094.1  LN:16393
+@SQ     SN:NC_012053.1  LN:16384
+@SQ     SN:NC_032301.1  LN:16370
+@SQ     SN:NC_012051.1  LN:16386
+@SQ     SN:NC_064558.1  LN:16392
+@SQ     SN:NC_083222.1  LN:16390
+@SQ     SN:NC_036415.1  LN:16384
+@PG     ID:bowtie2      PN:bowtie2      VN:2.5.4        CL:"/u/davisee/.conda/envs/db_mito_mining_building/bin/bowtie2-align-s --wrapper basic-0 --very-sensitive-local -x 9726_index -q 9726_mi(db_mito_mining_building) [davisee@dc7-a2-ru05 9726]$ ls -lh
+total 84M
+-rw-r--r-- 1 davisee hpcusers 4.2M Jan 19 11:41 9726_index.1.bt2
+-rw-r--r-- 1 davisee hpcusers 108K Jan 19 11:41 9726_index.2.bt2
+-rw-r--r-- 1 davisee hpcusers  854 Jan 19 11:41 9726_index.3.bt2
+-rw-r--r-- 1 davisee hpcusers 108K Jan 19 11:41 9726_index.4.bt2
+-rw-r--r-- 1 davisee hpcusers 4.2M Jan 19 11:41 9726_index.rev.1.bt2
+-rw-r--r-- 1 davisee hpcusers 108K Jan 19 11:41 9726_index.rev.2.bt2
+-rw-r--r-- 1 davisee hpcusers  147 Nov 28 16:15 9726_metrics.csv
+-rw-r--r-- 1 davisee hpcusers    0 Jan 17 17:34 9726_mito_index
+-rw-r--r-- 1 davisee hpcusers    0 Jan 19 11:39 9726_mitogenes.fq
+-rw-r--r-- 1 davisee hpcusers 3.7M Jan 19 11:32 9726_mitogenes_unmatched.fna
+-rw-r--r-- 1 davisee hpcusers  24M Nov 28 16:15 9726_mitogenomes.fna
+-rw-r--r-- 1 davisee hpcusers 442K Jan 19 11:09 9726_mitogenomes.matched.fna
+-rw-r--r-- 1 davisee hpcusers  24M Jan 19 11:09 9726_mitogenomes.unmatched.fna
+-rw-r--r-- 1 davisee hpcusers  24M Jan  8 12:40 9726_mitogenomes_clean.fna
+-rw-r--r-- 1 davisee hpcusers   19 Jan 17 17:22 refseq_accession_filter.txt
+local -x 9726_index -q 9726_mitogenes.fq -ru05 9726]$ bowtie2 --very-sensitive-l
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+        LANGUAGE = (unset),
+        LC_ALL = (unset),
+        LANG = "C.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+Unable to read file magic number
+0 reads
+0.00% overall alignment rate
+@HD     VN:1.5  SO:unsorted     GO:query
+@SQ     SN:NC_035426.1  LN:16392
+@SQ     SN:NC_050265.1  LN:16384
+@SQ     SN:NC_022805.1  LN:16388
+@SQ     SN:NC_019591.1  LN:16389
+@SQ     SN:NC_045404.1  LN:16384
+@SQ     SN:NC_012057.1  LN:16388
+@SQ     SN:NC_019589.1  LN:16388
+@SQ     SN:NC_037848.1  LN:16390
+@SQ     SN:NC_019588.1  LN:16387
+@SQ     SN:NC_060612.1  LN:16386
+@SQ     SN:NC_060611.1  LN:16384
+@SQ     SN:NC_012061.1  LN:16385
+@SQ     SN:NC_020696.1  LN:16371
+@SQ     SN:NC_060610.1  LN:16374
+@SQ     SN:NC_012062.1  LN:16386
+@SQ     SN:NC_019577.1  LN:16392
+@SQ     SN:NC_012058.1  LN:16385
+@SQ     SN:NC_019590.1  LN:16383
+@SQ     SN:NC_042761.1  LN:16386
+@SQ     SN:NC_019578.2  LN:16390
+@SQ     SN:NC_083094.1  LN:16393
+@SQ     SN:NC_012053.1  LN:16384
+@SQ     SN:NC_032301.1  LN:16370
+@SQ     SN:NC_012051.1  LN:16386
+@SQ     SN:NC_064558.1  LN:16392
+@SQ     SN:NC_083222.1  LN:16390
+@SQ     SN:NC_036415.1  LN:16384
+@PG     ID:bowtie2      PN:bowtie2      VN:2.5.4        CL:"/u/davisee/.conda/envs/db_mito_mining_building/bin/bowtie2-align-s --wrapper basic-0 --very-sensitive-local -x 9726_index -q 9726_mitogenes.fq"
+(db_mito_mining_building) [davisee@dc7-a2-ru05 9726]$ client_loop: send disconnect: Connection reset by peer
+
+
+########## genomes stuff ---> tested R script, need to reload databases and things bc I don't have all of the metadata fields needed, need to get updated field names by hand to change in code
+
+
+################################ 20.01.2026 #################################
+#re-ran ncbi_cli_download.sh with cross-checked fields, added new fields to it to match what is done in Mikkel's .Rmd
+--fields accession,assminfo-bioproject,assminfo-biosample-description-organism-common-name,assminfo-biosample-description-organism-name,organism-tax-id,organism-name,source_database,assminfo-biosample-owner-name,assminfo-biosample-host,assminfo-biosample-geo-loc-name,assminfo-biosample-isolation-source,assminfo-biosample-ecotype,assminfo-level,assmstats-contig-l50,assmstats-contig-n50,assmstats-gaps-between-scaffolds-count,assmstats-atgc-count,assmstats-gc-percent,assmstats-number-of-component-sequences,assmstats-number-of-contigs,assmstats-number-of-organelles,assmstats-number-of-scaffolds,assmstats-scaffold-l50,assmstats-scaffold-n50,assmstats-total-number-of-chromosomes,assmstats-total-sequence-len,assmstats-total-ungapped-len,organelle-description,organelle-total-seq-length,assminfo-blast-url
+
+
+#this worked, kept the apes.taxid from previous runs, and then ran everything else in the script, all worked in concept. Now gonna do the random tsv thing to help with the stuff. 
+
+### From Mikkel 
+``` bash
+conda install -c bioconda taxonkit
+wget -c https://ftp.ncbi.nih.gov/pub/taxonomy/taxdump.tar.gz  -----> did this previously with taxondump, all files are in /u/davisee/.taxonkit
+tar -zxvf taxdump.tar.gz
+
+mkdir -p $HOME/.taxonkit
+cp names.dmp nodes.dmp delnodes.dmp merged.dmp $HOME/.taxonkit
+
+cut -f4 wgs_eukaryota.metadata_filter.short.tsv | tail -n+2 | taxonkit reformat2 - > taxon_paths.tsv ---> don't know really yet the fuck this is supposed to be. 
+
+cut -f5 eukaryote_master_database.tsv | tail -n+2 | taxonkit reformat2 - > taxon_paths.tsv
+
+(ncbi_cli_downloads) [davisee@dc7-a2-ru04 Refseq_2026]$ ls -lh
+total 88M
+-rw-r--r-- 1 davisee rosalind_admins  633 Jan 17 17:06 apes.taxids
+-rw-r--r-- 1 davisee rosalind_admins  25M Jan 20 15:28 eukaryote_master_database.tsv
+-rw-r--r-- 1 davisee rosalind_admins 6.2M Jan 20 15:27 fungi.jsonl.gz
+-rw-r--r-- 1 davisee rosalind_admins 5.7M Jan 20 15:28 fungi.tsv
+-rw-r--r-- 1 davisee rosalind_admins 9.4M Jan 20 15:27 metazoa.jsonl.gz
+-rw-r--r-- 1 davisee rosalind_admins 5.4M Jan 20 15:28 metazoa.tsv
+-rw-r--r-- 1 davisee rosalind_admins 5.4M Jan 20 15:28 metazoa_no_apes.tsv
+-rw-r--r-- 1 davisee rosalind_admins  16M Jan 20 15:28 mitochondria.jsonl.gz
+-rw-r--r-- 1 davisee rosalind_admins  12M Jan 20 15:28 mitochondria.tsv
+-rw-r--r-- 1 davisee rosalind_admins 2.4M Jan 20 15:28 plastids.jsonl.gz
+-rw-r--r-- 1 davisee rosalind_admins 1.9M Jan 20 15:28 plastids.tsv
+-rw-r--r-- 1 davisee rosalind_admins 143K Jan 20 15:27 protozoa.jsonl.gz
+-rw-r--r-- 1 davisee rosalind_admins 137K Jan 20 15:28 protozoa.tsv
+(ncbi_cli_downloads) [davisee@dc7-a2-ru04 Refseq_2026]$ head -n1 eukaryote_master_database.tsv
+Assembly Accession      Assembly BioProject Accession   Assembly BioSample Description Organism Common Name  Assembly BioSample Description Organism Name    Organism Taxonomic ID   Organism Name   Source Database      Assembly BioSample Owner Name   Assembly BioSample Host Assembly BioSample Geographic location       Assembly BioSample Isolation source     Assembly BioSample Ecotype      Assembly Level       Assembly Stats Contig L50       Assembly Stats Contig N50       Assembly Stats Gaps Between Scaffolds Count  Assembly Stats ATGC Count       Assembly Stats GC Percent       Assembly Stats Genome Coverage       Assembly Stats Number of Component Sequences    Assembly Stats Number of Contigs    Assembly Stats Number of Organelles      Assembly Stats Number of Scaffolds      Assembly Stats Scaffold L50  Assembly Stats Scaffold N50     Assembly Stats Total Number of Chromosomes      Assembly Stats Total Sequence Length Assembly Stats Total Ungapped Length    Organelle Description   Organelle Total Seq Length
+############### doing some bash fixing 
+(ncbi_cli_downloads) [davisee@dc7-a2-ru04 Refseq_2026]$ # A) Confirm how many tab-delimited fields are in the header
+(ncbi_cli_downloads) [davisee@dc7-a2-ru04 Refseq_2026]$ awk -F'\t' 'NR==1{print "Header fields (tab-delimited):", NF; print $0}' eukaryote_master_database.tsv
+Header fields (tab-delimited): 30
+Assembly Accession      Assembly BioProject Accession   Assembly BioSample Description Organism Common Name  Assembly BioSample Description Organism Name    Organism Taxonomic ID   Organism Name   Source Database      Assembly BioSample Owner Name   Assembly BioSample Host Assembly BioSample Geographic location       Assembly BioSample Isolation source     Assembly BioSample Ecotype      Assembly Level       Assembly Stats Contig L50       Assembly Stats Contig N50       Assembly Stats Gaps Between Scaffolds Count  Assembly Stats ATGC Count       Assembly Stats GC Percent       Assembly Stats Genome Coverage       Assembly Stats Number of Component Sequences    Assembly Stats Number of Contigs    Assembly Stats Number of Organelles      Assembly Stats Number of Scaffolds      Assembly Stats Scaffold L50  Assembly Stats Scaffold N50     Assembly Stats Total Number of Chromosomes      Assembly Stats Total Sequence Length Assembly Stats Total Ungapped Length    Organelle Description   Organelle Total Seq Length
++) printf "%d\t%s\n", i, $i}' eukaryote_master_database.tsv
+(ncbi_cli_downloads) [davisee@dc7-a2-ru04 Refseq_2026]$
+(ncbi_cli_downloads) [davisee@dc7-a2-ru04 Refseq_2026]$ # B) Show a numbered list of header columns (tab-based)
+(ncbi_cli_downloads) [davisee@dc7-a2-ru04 Refseq_2026]$ awk -F'\t' 'NR==1{for(i=1;i<=NF;i++) printf "%d\t%s\n", i, $i}' eukaryote_master_database.tsv
+1       Assembly Accession
+2       Assembly BioProject Accession
+3       Assembly BioSample Description Organism Common Name
+4       Assembly BioSample Description Organism Name
+5       Organism Taxonomic ID
+6       Organism Name
+7       Source Database
+8       Assembly BioSample Owner Name
+9       Assembly BioSample Host
+10      Assembly BioSample Geographic location
+11      Assembly BioSample Isolation source
+12      Assembly BioSample Ecotype
+13      Assembly Level
+14      Assembly Stats Contig L50
+15      Assembly Stats Contig N50
+16      Assembly Stats Gaps Between Scaffolds Count
+17      Assembly Stats ATGC Count
+18      Assembly Stats GC Percent
+19      Assembly Stats Genome Coverage
+20      Assembly Stats Number of Component Sequences
+21      Assembly Stats Number of Contigs
+22      Assembly Stats Number of Organelles
+23      Assembly Stats Number of Scaffolds
+24      Assembly Stats Scaffold L50
+25      Assembly Stats Scaffold N50
+26      Assembly Stats Total Number of Chromosomes
+27      Assembly Stats Total Sequence Length
+28      Assembly Stats Total Ungapped Length
+29      Organelle Description
+30      Organelle Total Seq Length
+
+
+######################### 29.01.2026 #########################
+switching gears to k2 filtering bc the database finalised! 
+
+** yesterday (28.01.2026) did quick and dirty testing of k2_filter_testing_folder with copies of all EBCS in interative terminal, and it did work! but each one sample took ~45 minutes on the interactive node, so it is not a viable option. 
+But liked file set up I put in for it: 
+-Sample folder
+		--for_competitive (contains unmapped.fastq output for each sample)
+		--k2_classification (contains classification.txt results of mapped output each sample)
+		--k2_hits (contains mapped.fastq output for each sample)
+		--logs (contains kraken2 log for each sample run)
+
+
+Because it took a lot of time in the interactive node, going to process by original sample basename: 
+IMAS_IODP382
+Aviti_SED24SeqPool2
+SED24SeqPool3
+SED25SeqPool1_Aviti_COLLAPS
+SED25SeqPool2_KCCGNovaSeq
+SED23SeqPool3_Novaseq
+
+# lets use quick code to see what sample distribution in 
+grep -r "sample_basename" . | wc -l 
+
+#after checking, this is not utilising hpc resources properly, need to look at creating a job array // parallelisation that works with this structure. 
+
+######################## 02.02.2026 ###########################
+Needed to do a small name change for samples to make it bit easier with processing: 
+[davisee@rosalind-01 collapsed_kxdd_rename_4k2]$ for f in 20250901_*.fastq*; do   echo mv "$f" "${f#20250901_}"; done
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2417_ICDP5072_1M_1G_1_WR_0_1cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2417_ICDP5072_1M_1G_1_WR_0_1cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2418_ICDP5072_1M_1G_1_WR_1_2cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2418_ICDP5072_1M_1G_1_WR_1_2cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2419_ICDP5072_1M_1G_1_WR_2_3cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2419_ICDP5072_1M_1G_1_WR_2_3cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2420_ICDP5072_1M_1G_1_WR_3_4cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2420_ICDP5072_1M_1G_1_WR_3_4cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2421_ICDP5072_1M_1G_1_WR_4_5cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2421_ICDP5072_1M_1G_1_WR_4_5cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2422_ICDP5072_1M_1G_1_WR_5_6cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2422_ICDP5072_1M_1G_1_WR_5_6cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2423_ICDP5072_1M_1G_1_WR_6_7cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2423_ICDP5072_1M_1G_1_WR_6_7cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2424_ICDP5072_1M_1G_1_WR_7_8cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2424_ICDP5072_1M_1G_1_WR_7_8cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2425_ICDP5072_1M_1G_1_WR_8_9cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2425_ICDP5072_1M_1G_1_WR_8_9cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2426_ICDP5072_1M_1G_1_WR_9_10cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2426_ICDP5072_1M_1G_1_WR_9_10cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2427_ICDP5072_1M_1G_1_WR_10_11cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2427_ICDP5072_1M_1G_1_WR_10_11cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2428_ICDP5072_1M_1G_1_WR_11_12cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2428_ICDP5072_1M_1G_1_WR_11_12cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2429_ICDP5072_1M_1G_1_WR_12_13cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2429_ICDP5072_1M_1G_1_WR_12_13cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2430_ICDP5072_1M_1G_1_WR_13_14cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2430_ICDP5072_1M_1G_1_WR_13_14cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2431_ICDP5072_1M_1G_1_WR_14_15cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2431_ICDP5072_1M_1G_1_WR_14_15cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2432_ICDP5072_1M_1G_1_WR_15_16cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2432_ICDP5072_1M_1G_1_WR_15_16cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2433_ICDP5072_1M_1G_1_WR_16_17cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2433_ICDP5072_1M_1G_1_WR_16_17cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2434_ICDP5072_1M_1G_1_WR_17_18cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2434_ICDP5072_1M_1G_1_WR_17_18cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2435_ICDP5072_1M_1G_1_WR_18_19cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2435_ICDP5072_1M_1G_1_WR_18_19cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2436_ICDP5072_1M_1G_1_WR_19_20cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2436_ICDP5072_1M_1G_1_WR_19_20cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2437_ICDP5072_1M_1G_1_WR_20_21cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2437_ICDP5072_1M_1G_1_WR_20_21cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2438_ICDP5072_1M_1G_1_WR_21_22cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2438_ICDP5072_1M_1G_1_WR_21_22cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2439_ICDP5072_1M_1G_1_WR_22_23cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2439_ICDP5072_1M_1G_1_WR_22_23cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2440_ICDP5072_1M_1G_1_WR_23_24cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2440_ICDP5072_1M_1G_1_WR_23_24cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2441_ICDP5072_1M_1G_1_WR_24_25cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2441_ICDP5072_1M_1G_1_WR_24_25cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2442_ICDP5072_1M_1G_1_WR_25_26cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2442_ICDP5072_1M_1G_1_WR_25_26cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2443_ICDP5072_1M_1G_1_WR_26_27cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2443_ICDP5072_1M_1G_1_WR_26_27cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2444_ICDP5072_1M_1G_1_WR_27_28cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2444_ICDP5072_1M_1G_1_WR_27_28cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2445_ICDP5072_1M_1G_1_WR_28_29cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2445_ICDP5072_1M_1G_1_WR_28_29cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2446_ICDP5072_1M_1G_1_WR_29_30cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2446_ICDP5072_1M_1G_1_WR_29_30cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2447_ICDP5072_1M_1G_1_WR_30_31cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2447_ICDP5072_1M_1G_1_WR_30_31cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2448_ICDP5072_1M_1G_1_WR_32_33cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2448_ICDP5072_1M_1G_1_WR_32_33cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2449_ICDP5072_1M_1G_1_WR_34_35cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2449_ICDP5072_1M_1G_1_WR_34_35cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2450_ICDP5072_1M_1G_1_WR_36_37cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2450_ICDP5072_1M_1G_1_WR_36_37cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2451_ICDP5072_1M_1G_1_WR_38_39cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2451_ICDP5072_1M_1G_1_WR_38_39cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2452_ICDP5072_1M_1G_1_WR_40_41cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2452_ICDP5072_1M_1G_1_WR_40_41cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2453_ICDP5072_1M_1G_1_WR_42_43cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2453_ICDP5072_1M_1G_1_WR_42_43cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2454_ICDP5072_1M_1G_1_WR_44_45cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2454_ICDP5072_1M_1G_1_WR_44_45cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2455_ICDP5072_1M_1G_1_WR_46_47cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2455_ICDP5072_1M_1G_1_WR_46_47cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2456_ICDP5072_1M_1G_1_WR_48_49cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2456_ICDP5072_1M_1G_1_WR_48_49cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2457_ICDP5072_1M_1G_1_WR_50_52cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2457_ICDP5072_1M_1G_1_WR_50_52cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2458_ICDP5072_1M_1G_1_WR_54_56cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2458_ICDP5072_1M_1G_1_WR_54_56cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2459_ICDP5072_1M_1G_1_WR_58_60cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2459_ICDP5072_1M_1G_1_WR_58_60cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2460_ICDP5072_1M_1G_1_WR_62_64cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2460_ICDP5072_1M_1G_1_WR_62_64cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2461_ICDP5072_1M_1G_1_WR_66_68cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2461_ICDP5072_1M_1G_1_WR_66_68cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2462_ICDP5072_1M_1G_1_WR_70_72cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2462_ICDP5072_1M_1G_1_WR_70_72cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2463_ICDP5072_1M_1G_1_WR_74_76cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2463_ICDP5072_1M_1G_1_WR_74_76cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2464_ICDP5072_1M_1G_1_WR_76_78cm.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2464_ICDP5072_1M_1G_1_WR_76_78cm.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2465_ICDP5072_1_M_1G_1_WR_0_Mudline.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2465_ICDP5072_1_M_1G_1_WR_0_Mudline.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2466_ICDP5072_1M_1G_1_WR_0_1cm_outer.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2466_ICDP5072_1M_1G_1_WR_0_1cm_outer.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2467_ICDP5072_1M_1G_1_WR_1_2cm_outer.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2467_ICDP5072_1M_1G_1_WR_1_2cm_outer.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2470_ICDP5072_1M_1G_1_WR_49_50cm_outer.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2470_ICDP5072_1M_1G_1_WR_49_50cm_outer.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2473_ICDP5072_1M_1G_1_WR_74_76cm_outer.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2473_ICDP5072_1M_1G_1_WR_74_76cm_outer.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2474_ICDP5072_1M_1G_1_WR_76_78cm_outer.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2474_ICDP5072_1M_1G_1_WR_76_78cm_outer.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2475_ICDP5072_1M_1G_AirCtrl.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.2475_ICDP5072_1M_1G_AirCtrl.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.EBC39.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.EBC39.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.EBC40.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.EBC40.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.EBC41.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.EBC41.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.EBC42.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.EBC42.ckdd.fastq.gz
+mv 20250901_SED25SeqPool2_KCCGNovaSeq_SWAIS2C.EBC43.ckdd.fastq.gz SED25SeqPool2_KCCGNovaSeq_SWAIS2C.EBC43.ckdd.fastq.gz
+[davisee@rosalind-01 collapsed_kxdd_rename_4k2]$ for f in 20250901_*.fastq*; do
+>   mv "$f" "${f#20250901_}"
+> done
+
+
+########## creating a sample text file with all the names of all of the samples. 
+ ls -1 *.ckdd.fastq.gz | sed 's/.ckdd.fastq.gz$//' > samples_all.txt
+[davisee@rosalind-01 collapsed_kxdd_rename_4k2]$ wc -l samples_all.txt
+410 samples_all.txt ---> including all EBCs, there arre 410 samples for this project
+
+
+
+
+##################### 04.02.2026 #######################
+kraken2 array benchmarking --- with sample.txt (in collapsed_for_kraken2 file)
+once tested, will do kraken2 array with samples_noIODP
+
+ -J 1-10 -l select=1:ncpus=4:mem=64gb  kraken2_array.sh
+qsub -J 1-10 -l select=1:ncpus=8:mem=96gb  kraken2_array.sh
+qsub -J 1-10 -l select=1:ncpus=16:mem=128gb kraken2_array.sh
+
+
+----> doing testing, need to wait for jobs to run. once they do, need to run for benchmarking statistics: 
+After a few tasks finish: collect benchmark metrics
+For the array job id (replace with yours):
+Shellqstat -fx 1320561 | egrep 'resources_used.walltime|resources_used.cput|resources_used.mem|Resource_List'Show more lines
+Do this for both CPU settings you test (e.g., 4×96 GB and 8×96–128 GB with --memory-mapping). Compare median resources_used.walltime across tasks:
+
+If 8 threads is only marginally faster than 4, stick with 4 CPUs for production (more tasks can run in parallel and you’ll be a great cluster citizen).
+If 8 gives a clear improvement, keep 8.
+
+
+For GTDB‑scale Kraken2, it’s common to see diminishing returns beyond ~6–8 threads. Your numbers will confirm what’s best on Rosalind with the I/O and caching you have.
+
+
+Production recommendations once the benchmark is in
+
+Kraken2 flags: keep --memory-mapping.
+Resources:
+
+If 4 threads is near‑optimal → select=1:ncpus=4:mem=96gb
+If 8 threads is clearly better → select=1:ncpus=8:mem=96–128gb
+
+
+Array: #PBS -J 1-401%20 (or %16/%24 depending on how busy the cluster is)
+Placement: add #PBS -l place=scatter back for production runs.
+Walltime: set to something realistic from the benchmark (e.g., 24 h), not 48 h, to help backfilling.
+
+If you want, share the resources_used.* block from 3–5 finished sub‑tasks of each setting (4‑CPU and 8‑CPU), and I’ll help you choose the final production spec and write the cleaned, final array script (k2_array_production.pbs) tailored to your results.
+You’re doing great here—this is exactly how to turn a tricky HPC step into a stable, scalable part of your pipeline.
+
+##### best way to check jobs
+qstat -t -u $USER ### -t is crucial for arrays
+
+How to prove to yourself jobs are running (real‑time)
+If a job is running now, do this:
+Shellqstat -fx 1320561[1] | egrep 'job_state|stime|exec_host'Show more lines
+You’ll see:
+
+job_state = R
+stime = … (start time)
+exec_host = … (node name)
+
+#how to check exit status of array task that is still running (get job number from watch)
+qstat -fx job_numeber[array_number]
+
+
+
+##################### 10.02.2026 ##########################
+
+So even after running the array for all 330 samples for 20 hours, more than a third of the samples stalled out. 
+
+So, best plan of action will be to create three separate sample.txt files (each with 110 names in each), and then just run each of those with the current benchmarking limits. 
+
+wc -l samples_all.txt
+410  --> most even split that was small was 5 parts with 82 samples each
+
+# small code to split each of the scripts 
+split -l 82 samples_all.txt part_
+
+mv part_aa samples_1.txt
+mv part_ab samples_2.txt
+mv part_ac samples_3.txt
+mv part_ad samples_4.txt
+mv part_ae samples_5.txt
+
+### things changed in rosalind_05_kraken_array.sh script
+#J 1-82 and samples_{}.txt input
+
+samples_1.txt  JOBID:1324883[].rosalind-pbs-0.tpac.org.au 
+samples_2.txt
+samples_3.txt
+samples_4.txt
+samples_5.txt
+
+
+ALSO: for cross-referencing RAMS taxa list (with NCBI names + taxaID) with GBIF and SCAR_marBIN to see if there are straggler species
+[davisee@dc7-a2-ru05 ~]$ conda activate /u/davisee/miniconda2/envs/mito_mining
+(mito_mining) [davisee@dc7-a2-ru05 ~]$ cd chapter2_data/RAMS_cross_reference/
+(mito_mining) [davisee@dc7-a2-ru05 RAMS_cross_reference]$ ls -lh
+total 38K
+-rw-r--r-- 1 davisee hpcusers  19K Feb 10 17:28 check_RAMS_species_in_geography.txt
+-rw-r--r-- 1 davisee hpcusers  14K Feb 10 17:28 check_RAMS_species_NCBIname_in_geograpy2.txt
+-rwxr-xr-x 1 davisee hpcusers 5.2K Feb 10 17:37 RAMS_taxalist_crossreference_GBIF_untestedscript.py
+(mito_mining) [davisee@dc7-a2-ru05 RAMS_cross_reference]$ python RAMS_taxalist_crossreference_GBIF_untestedscript.py 
+... processed 25/626
+... processed 50/626
+... processed 75/626
+... processed 100/626
+... processed 125/626
+... processed 150/626
+... processed 175/626
+... processed 200/626
+... processed 225/626
+... processed 250/626
+
+# this is on an interactive node on window terminal, hopefully will not stall out while its running. has been running for ~20 minutes and is halfway done, so this is good enough for today.
+
+################################ 11.02.2026 ######################
+#checking the samples_1.txt  JOBID:1324883[].rosalind-pbs-0.tpac.org.au this morning, still running into the issue that many of them are stalling, even when there is a third of the samples available. But while i was looking up parallel jobs + arrays today, came across this online: 
+Limiting Concurrency
+By default, the sub-jobs run in parallel as much as the scheduler allows. To limit the number of simultaneously active sub-jobs (e.g., to avoid overloading the file system or a license server), you can use the % operator: 
+bash
+#PBS -J 1-100%5
+This example creates 100 sub-jobs but ensures no more than 5 are running at any given time
+
+^^^^ I think this is the reason that my array jobs never fully resolve, so perhaps it would be better to run all 410 samples, but make it so that it only runs ten sub-tasks at a time. Then perhaps this will make sense why the amount of wall time doesn't seem to be changing how many samples get processed at one time. 
+
+I will do a benchmarking array test, where I set $PBS -J 1-10%2, to see how this behaves before going forward. Going to cancel the previous job i have running from last night. 
+
+qsub: illegal -J value
+usage: qsub [-a date_time] [-A account_string] [-c interval]
+        [-C directive_prefix] [-e path] [-f ] [-h ] [-I [-X]] [-j oe|eo] [-J X-Y[:Z]]
+        [-k keep] [-l resource_list] [-m mail_options] [-M user_list]
+        [-N jobname] [-o path] [-p priority] [-P project] [-q queue] [-r y|n]
+        [-R o|e|oe] [-S path] [-u user_list] [-W otherattributes=value...]
+        [-S path] [-u user_list] [-W otherattributes=value...]
+        [-v variable_list] [-V ] [-z] [script | -- command [arg1 ...]]
+
+
+## so bc of course our current PBS scheduler is an older version prior to 2021, so it doesn't allow you to put throttle on jobs to limit concurrcy (-J 1-10%2). What -J 1-10:2 means is ---> Do array tasks 1, 3, 5, 7, 9. Not what we want, but i guess would be useful for doing somewhat random subset benchmarking. 
+
+Working with copilot, a work around is to add an internal concurrency limiter with lock files in a lock directory 
+
+
+
+##################### 30.04.2026 ###########################
+Decoy.fna part making (checking for post-k2 filter contamination and human contamination)
+
+#using ncbi_cli_download conda enviroment 
+#downloaded by either taxon name and -complete genome
+#then cat stuff together
+## decoy with human for all other taxonomic parts
+cat archaea_decoy.fna \
+    Ecoli_K12/ncbi_dataset/data/GCF_000005845.2/GCF_000005845.2_ASM584v2_genomic.fna \
+    /data/imas_projects/ancient/share/Databases/2026_SO_RefGen_Chordataheavy_curated/db_part_ArchBac_Decoy/HumanGRCh38_RefSeq/ncbi_dataset/data/GCF_000001405.40/GCF_000001405.40_GRCh38.p14_genomic.fna \
+    | tee prokaryotic_decoy_withHuman.fna > /dev/null
+
+
+
+## decoy without human for Mammalia_GRch38 index builing
+
+    cat archaea_decoy.fna \
+    Ecoli_K12/ncbi_dataset/data/GCF_000005845.2/GCF_000005845.2_ASM584v2_genomic.fna \
+    | tee prokaryotic_decoy.fna > /dev/null
+
+
+############################## 01.05.2026 #####################
+#in order to split all db .fna files into small enough bites while still maintining fasta header and sequence integrity created new conda 
+ENV = /u/davisee/.conda/envs/SeqKit
+conda install -c bioconda seqkit
+
+# for reviewing how much time for Fungi_Protists.fna (40 GB to run) ---> 
+stdout rosalind_constructiondb06_eukmaster_bt2index_Fungi_Protists.o1371353
+
+############## run information ###############
+(SeqKit) [davisee@rosalind-01 scripts_chapter2]$ qstat -fx 1371353
+Job Id: 1371353.rosalind-pbs-0.tpac.org.au
+    Job_Name = rosalind_constructiondb06_eukmaster_bt2index_Fungi_Protists
+    Job_Owner = davisee@rosalind
+    resources_used.cpupercent = 99
+    resources_used.cput = 47:23:25
+    resources_used.mem = 115162488kb
+    resources_used.ncpus = 8
+    resources_used.vmem = 117191060kb
+    resources_used.walltime = 47:30:08
+    job_state = F
+    queue = mem768G
+    server = rosalind-pbs-0.tpac.org.au
+    Checkpoint = u
+    ctime = Tue Apr 14 11:14:53 2026
+    Error_Path = rosalind:/u/davisee/scripts_chapter2/rosalind_constructiondb06
+        _eukmaster_bt2index_Fungi_Protists.e1371353
+    exec_host = dc7-a4-ru10/0*8
+    exec_vnode = (dc7-a4-ru10:ncpus=8:mem=524288000kb)
+    Hold_Types = n
+    Join_Path = n
+    Keep_Files = n
+    Mail_Points = abe
+    Mail_Users = emily.davis@utas.edu.au
+    mtime = Thu Apr 16 10:45:02 2026
+    Output_Path = rosalind:/u/davisee/scripts_chapter2/rosalind_constructiondb0
+        6_eukmaster_bt2index_Fungi_Protists.o1371353
+    Priority = 0
+    qtime = Tue Apr 14 11:14:53 2026
+    Rerunable = True
+    Resource_List.faulty_node = False
+    Resource_List.mem = 500gb
+    Resource_List.ncpus = 8
+    Resource_List.nodect = 1
+    Resource_List.place = free
+    Resource_List.select = 1:ncpus=8:mem=500G
+    Resource_List.walltime = 192:00:00
+    stime = Tue Apr 14 11:14:53 2026
+    session_id = 118576
+    jobdir = /u/davisee
+    substate = 92
+    Variable_List = __LMOD_REF_COUNT_LOADEDMODULES=autotools:1;prun/1.3:1;gnu8/
+        8.3.0:1;ohpc:1,
+        LS_COLORS=rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=4
+        0;33;01:cd=40;33;01:or=40;31;01:mi=01;05;37;41:su=37;41:sg=30;43:ca=30;
+        41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01
+        ;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=
+        01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=0
+        1;31:*.Z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31
+        :*.xz=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:
+        *.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31
+        :*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;3
+        1:*.rz=01;31:*.cab=01;31:*.jpg=01;35:*.jpeg=01;35:*.gif=01;35:*.bmp=01;
+        35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01
+        ;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng
+        =01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.m
+        kv=01;35:*.webm=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:
+        *.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*
+        .rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:
+        *.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:
+        *.axv=01;35:*.anx=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=01;36:*.au=01;36:
+        *.flac=01;36:*.mid=01;36:*.midi=01;36:*.mka=01;36:*.mp3=01;36:*.mpc=01;
+        36:*.ogg=01;36:*.ra=01;36:*.wav=01;36:*.axa=01;36:*.oga=01;36:*.spx=01;
+        36:*.xspf=01;36:,LMOD_DIR=/opt/ohpc/admin/lmod/lmod/libexec,
+        __LMOD_REF_COUNT_MODULEPATH=/opt/ohpc/pub/moduledeps/gnu8:1;/opt/ohpc/
+        pub/modulefiles:1;/share/apps/modules:1;/share/apps/eb-modules/all:1,
+        LMOD_SETTARG_FULL_SUPPORT=no,LMOD_PKG=/opt/ohpc/admin/lmod/lmod,
+        PBS_O_LANG=en_US.UTF-8,QT_GRAPHICSSYSTEM_CHECKED=1,HOME=/u/davisee,
+        LD_LIBRARY_PATH=/opt/ohpc/pub/compiler/gcc/8.3.0/lib64,
+        LANG=en_US.UTF-8,SHELL=/bin/bash,
+        __LMOD_REF_COUNT__LMFILES_=/opt/ohpc/pub/modulefiles/autotools:1;/opt/
+        ohpc/pub/modulefiles/prun/1.3:1;/opt/ohpc/pub/modulefiles/gnu8/8.3.0:1;
+        /opt/ohpc/pub/modulefiles/ohpc:1,HISTSIZE=1000,
+        PBS_O_WORKDIR=/u/davisee/scripts_chapter2,_ModuleTable_Sz_=3,
+        MANPATH=/opt/ohpc/pub/compiler/gcc/8.3.0/share/man:/opt/ohpc/pub/utils
+        /autotools/share/man:/usr/local/share/man:/usr/share/man/overrides:/usr
+        /share/man/en:/usr/share/man:/opt/pbs/share/man,PBS_O_SYSTEM=Linux,
+        XDG_RUNTIME_DIR=/run/user/558608,LMOD_FAMILY_COMPILER_VERSION=8.3.0,
+        TPAC_QUOTA_SHOWN=1,LMOD_CMD=/opt/ohpc/admin/lmod/lmod/libexec/lmod,
+        BASH_FUNC_module()=() {  eval $($LMOD_CMD bash \"$@\") && eval $(${LMO
+        D_SETTARG_CMD:-:} -s sh)
+},XDG_SESSION_ID=75848,
+        LMOD_FAMILY_COMPILER=gnu8,LMOD_FULL_SETTARG_SUPPORT=no,
+        SSH_TTY=/dev/pts/2,HOSTNAME=rosalind-01.rosalind,
+        LMOD_ROOT=/opt/ohpc/admin/lmod,
+        _ModuleTable002_=LHByb3BUPXt9LFsic3RhY2tEZXB0aCJdPTEsWyJzdGF0dXMiXT0iY
+        WN0aXZlIixbInVzZXJOYW1lIl09ImdudTgiLH0sb2hwYz17WyJmbiJdPSIvb3B0L29ocGMv
+        cHViL21vZHVsZWZpbGVzL29ocGMiLFsiZnVsbE5hbWUiXT0ib2hwYyIsWyJsb2FkT3JkZXI
+        iXT00LHByb3BUPXt9LFsic3RhY2tEZXB0aCJdPTAsWyJzdGF0dXMiXT0iYWN0aXZlIixbIn
+        VzZXJOYW1lIl09Im9ocGMiLH0scHJ1bj17WyJmbiJdPSIvb3B0L29ocGMvcHViL21vZHVsZ
+        WZpbGVzL3BydW4vMS4zIixbImZ1bGxOYW1lIl09InBydW4vMS4zIixbImxvYWRPcmRlciJd
+        PTIscHJvcFQ9e30sWyJzdGFja0RlcHRoIl09MSxbInN0YXR1cyJdPSJhY3RpdmUiLFsidXN
+        lck5hbWUiXT0icHJ1biIsfSx9LG1wYXRo,MAIL=/var/spool/mail/davisee,
+        SSH_CONNECTION=172.27.24.3 59876 172.27.24.12 22,LMOD_SETTARG_CMD=:,
+        __LMOD_REF_COUNT_MANPATH=/opt/ohpc/pub/compiler/gcc/8.3.0/share/man:1;
+        /opt/ohpc/pub/utils/autotools/share/man:1;/usr/local/share/man:1;/usr/s
+        hare/man/overrides:1;/usr/share/man/en:1;/usr/share/man:1,
+        PBS_O_HOME=/u/davisee,LESSOPEN=||/usr/bin/lesspipe.sh %s,
+        PBS_O_LOGNAME=davisee,SSH_CLIENT=172.27.24.3 59876 22,LOGNAME=davisee,
+        USER=davisee,
+        PATH=/opt/ohpc/pub/compiler/gcc/8.3.0/bin:/opt/ohpc/pub/utils/prun/1.3
+        :/opt/ohpc/pub/utils/autotools/bin:/share/apps/bin:/opt/ohpc/pub/bin:/u
+        sr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/opt/pbs/bin,
+        __LMOD_REF_COUNT_INCLUDE=/opt/ohpc/pub/compiler/gcc/8.3.0/include:1,
+        PS1=[\\u@\\h \\W]\\$,TERM=xterm-16color,
+        __LMOD_REF_COUNT_LD_LIBRARY_PATH=/opt/ohpc/pub/compiler/gcc/8.3.0/lib6
+        4:1,SHLVL=1,LMOD_PREPEND_BLOCK=normal,
+        _ModuleTable003_=QT17Ii9vcHQvb2hwYy9wdWIvbW9kdWxlZGVwcy9nbnU4IiwiL29wd
+        C9vaHBjL3B1Yi9tb2R1bGVmaWxlcyIsIi9zaGFyZS9hcHBzL21vZHVsZXMiLCIvc2hhcmUv
+        YXBwcy9lYi1tb2R1bGVzL2FsbCIsfSxbInN5c3RlbUJhc2VNUEFUSCJdPSIvb3B0L29ocGM
+        vcHViL21vZHVsZWZpbGVzOi9zaGFyZS9hcHBzL21vZHVsZXM6L3NoYXJlL2FwcHMvZWItbW
+        9kdWxlcy9hbGwiLH0=,
+        PBS_O_PATH=/opt/ohpc/pub/compiler/gcc/8.3.0/bin:/opt/ohpc/pub/utils/pr
+        un/1.3:/opt/ohpc/pub/utils/autotools/bin:/share/apps/bin:/opt/ohpc/pub/
+        bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/opt/pbs/bin,
+        MODULESHOME=/opt/ohpc/admin/lmod/lmod,
+        __LMOD_REF_COUNT_PATH=/opt/ohpc/pub/compiler/gcc/8.3.0/bin:1;/opt/ohpc
+        /pub/utils/prun/1.3:1;/opt/ohpc/pub/utils/autotools/bin:1;/share/apps/b
+        in:1;/opt/ohpc/pub/bin:1;/usr/local/bin:1;/usr/bin:1;/usr/local/sbin:1;
+        /usr/sbin:1,
+        _ModuleTable001_=X01vZHVsZVRhYmxlXz17WyJNVHZlcnNpb24iXT0zLFsiY19yZWJ1a
+        WxkVGltZSJdPWZhbHNlLFsiY19zaG9ydFRpbWUiXT1mYWxzZSxkZXB0aFQ9e30sZmFtaWx5
+        PXtbImNvbXBpbGVyIl09ImdudTgiLH0sbVQ9e2F1dG90b29scz17WyJmbiJdPSIvb3B0L29
+        ocGMvcHViL21vZHVsZWZpbGVzL2F1dG90b29scyIsWyJmdWxsTmFtZSJdPSJhdXRvdG9vbH
+        MiLFsibG9hZE9yZGVyIl09MSxwcm9wVD17fSxbInN0YWNrRGVwdGgiXT0xLFsic3RhdHVzI
+        l09ImFjdGl2ZSIsWyJ1c2VyTmFtZSJdPSJhdXRvdG9vbHMiLH0sZ251OD17WyJmbiJdPSIv
+        b3B0L29ocGMvcHViL21vZHVsZWZpbGVzL2dudTgvOC4zLjAiLFsiZnVsbE5hbWUiXT0iZ25
+        1OC84LjMuMCIsWyJsb2FkT3JkZXIiXT0z,LMOD_VERSION=8.1.18,
+        BASH_ENV=/opt/ohpc/admin/lmod/lmod/init/bash,
+        INCLUDE=/opt/ohpc/pub/compiler/gcc/8.3.0/include,
+        PBS_O_MAIL=/var/spool/mail/davisee,_=/opt/pbs/bin/qsub,
+        MODULEPATH=/opt/ohpc/pub/moduledeps/gnu8:/opt/ohpc/pub/modulefiles:/sh
+        are/apps/modules:/share/apps/eb-modules/all,PBS_O_SHELL=/bin/bash,
+        LOADEDMODULES=autotools:prun/1.3:gnu8/8.3.0:ohpc,
+        HISTCONTROL=ignoredups,PWD=/u/davisee/scripts_chapter2,
+        BASH_FUNC_ml()=() {  eval $($LMOD_DIR/ml_cmd \"$@\")
+},
+        _LMFILES_=/opt/ohpc/pub/modulefiles/autotools:/opt/ohpc/pub/modulefile
+        s/prun/1.3:/opt/ohpc/pub/modulefiles/gnu8/8.3.0:/opt/ohpc/pub/modulefil
+        es/ohpc,LMOD_COLORIZE=no,PBS_O_QUEUE=routeq0,PBS_O_HOST=rosalind
+    comment = Job run at Tue Apr 14 at 11:14 on (dc7-a4-ru10:ncpus=8:mem=524288
+        000kb) and finished
+    etime = Tue Apr 14 11:14:53 2026
+    run_count = 1
+    Stageout_status = 1
+    Exit_status = 0
+    Submit_arguments = rosalind_db_06_construction_bt2index.sh
+    history_timestamp = 1776300302
+    project = _pbs_project_default
+
+# and claude summary
+Resource Usage vs. Requested
+Resource Requested		Used 	  Efficiency	
+Walltime 192 hours	 47h30m 	 25% used
+Memory   500 GB     ~110 GB   ~22% used
+CPUs      8            8      ~99% (well utilised)
+
+Performance Notes
+CPU efficiency was excellent — nearly 100% utilisation across the 8 cores, meaning Bowtie2 indexed in parallel effectively.
+Memory was heavily over-requested — only ~110 GB of the 500 GB allocation was used. For future runs you could safely request ~150 GB with headroom, which would allow the job to run in a less restrictive queue and potentially start sooner.
+Walltime was also over-requested — 192 hours requested vs. ~48 hours used. Tightening this would similarly improve queue priority.
+The job ran in the mem768G queue, which is a high-memory node — appropriate given the index size, but worth optimising the request so it doesn't unnecessarily occupy that resource.
+
+# doing two tests to see how splitting algorithm behaves (how much to trust claude)
+
+1) splitting by file size ~ 50 GB
+#!/usr/bin/env bash
+#PBS -N split_Reptiles_memsplit
+#PBS -l select=1:ncpus=4:mem=50G
+#PBS -l walltime=24:00:00
+set -euo pipefail 
+
+#START SCRIPT
+
+module load Anaconda3/2024.02-1
+source activate /u/davisee/.conda/envs/SeqKit || true
+
+BASE_DIR="/data/imas_projects/ancient/share/Databases/2026_SO_RefGen_Chordataheavy_curated"
+cd $BASE_DIR
+
+seqkit split2 \
+    --by-size 50000000  \
+    --out-dir fna_parts_memsplit/ \
+    --by-size-prefix Reptiles_part \
+    db_part_Reptiles/all_euks_Reptiles_clean.fna
+
+date 
+module purge
+# END SCRIPT
+
+2) splitting by parts (so I do the math ahead of time)
+#!/usr/bin/env bash
+#PBS -N split_Reptiles_byparts
+#PBS -l select=1:ncpus=4:mem=50G
+#PBS -l walltime=24:00:00
+set -euo pipefail 
+
+#START SCRIPT
+
+module load Anaconda3/2024.02-1
+source activate /u/davisee/.conda/envs/SeqKit || true
+
+BASE_DIR="/data/imas_projects/ancient/share/Databases/2026_SO_RefGen_Chordataheavy_curated"
+cd $BASE_DIR
+
+seqkit split2 \
+    -p 4  \
+    --out-dir fna_parts/ \
+    --by-size-prefix Reptiles_part \
+    db_part_Reptiles/all_euks_Reptiles_clean.fna
+
+date 
+module purge
+# END SCRIPT
+
+#REMINDER WEEKEND ---> sketch out needed file structure for splitting .fna files --> making all the indexes ---> making index_manifest file
+
+################################ 07.05.2026 #########################
+file splitting from yesterday worked --> had to do by parts calculated beforehand (divided each part_clean.fna into roughly <= 50 GB parts and then input that number in the code) Code for .fna splitting with desired name (only the taxon part name) is script 
+scripts_chapter2/rosalind_db_06_fnasplit_4indexing.sh
+
+Next step Question: do I create the manifest .txt file now, or after creating indexes? the names of indexes should be based on the name I give it so it should???? ---> 
+
+Claude response: 
+Create the indexes first, then generate the manifest from successfully completed indexes rather than from the fna_parts. Here's why:
+
+Some index jobs may fail (memory, walltime) — a manifest generated from fna_parts would include parts that don't actually have a working index yet
+Generating the manifest from confirmed completed indexes means it's a reliable list that your mapping script can trust
+You don't want your mapping pipeline to try to map against a part whose index build failed silently
+
+
+So the order is:
+
+Now — write and test PBS index building script on Fungi_Protists_part1 as your test case since it's the smallest
+Once test passes — submit all remaining index jobs in batches by memory requirement
+Once all index jobs complete — generate manifest from confirmed indexes:
+
+bashls indexes/*.1.bt2 \
+    | sed 's|indexes/||' \
+    | sed 's|\.1\.bt2||' \
+    | sort > index_manifest.txt
+
+wc -l index_manifest.txt  # verify count matches expected ~229
+This way your manifest is a verified record of what actually exists rather than what you intended to build.
+
+
+## prior to testing indexing, gonna double check that fasta headers where preserved during seqkit split 
+# Check first few headers from one small part
+grep "^>" fna_parts/Reptiles_part_001.fasta.fna | head -5
+
+# Compare against original
+grep "^>" db_part_Reptiles/all_euks_Reptiles_clean.fna | head -5
+
+(bowtie2) [davisee@n148 2026_SO_RefGen_Chordataheavy_curated]$ grep "^>" fna_parts/Reptiles_part_001.fna | head -5
+grep: fna_parts/Reptiles_part_001.fna: No such file or directory
+(bowtie2) [davisee@n148 2026_SO_RefGen_Chordataheavy_curated]$ grep "^>" fna_parts/Reptiles_part_001.fasta.fna | head -5
+>CM131953.1 Aspidoscelis tigris stejnegeri isolate HBS 135688 chromosome 1, whole genome shotgun sequence
+>CM131957.1 Aspidoscelis tigris stejnegeri isolate HBS 135688 chromosome 5, whole genome shotgun sequence
+>CM131961.1 Aspidoscelis tigris stejnegeri isolate HBS 135688 chromosome 9, whole genome shotgun sequence
+>CM131965.1 Aspidoscelis tigris stejnegeri isolate HBS 135688 chromosome 13, whole genome shotgun sequence
+>CM131969.1 Aspidoscelis tigris stejnegeri isolate HBS 135688 chromosome 17, whole genome shotgun sequence
+grep: write error
+(bowtie2) [davisee@n148 2026_SO_RefGen_Chordataheavy_curated]$ grep "^>" db_part_Reptiles/all_euks_Reptiles_clean.fna | head -5
+>CM131953.1 Aspidoscelis tigris stejnegeri isolate HBS 135688 chromosome 1, whole genome shotgun sequence
+>CM131954.1 Aspidoscelis tigris stejnegeri isolate HBS 135688 chromosome 2, whole genome shotgun sequence
+>CM131955.1 Aspidoscelis tigris stejnegeri isolate HBS 135688 chromosome 3, whole genome shotgun sequence
+>CM131956.1 Aspidoscelis tigris stejnegeri isolate HBS 135688 chromosome 4, whole genome shotgun sequence
+>CM131957.1 Aspidoscelis tigris stejnegeri isolate HBS 135688 chromosome 5, whole genome shotgun sequence
+grep: write error
+(bowtie2) [davisee@n148 2026_SO_RefGen_Chordataheavy_curated]$ ls fna_parts/ | head -20
+Amphibians_part_001.fasta.fna
+Amphibians_part_002.fasta.fna
+Amphibians_part_003.fasta.fna
+Amphibians_part_004.fasta.fna
+Amphibians_part_005.fasta.fna
+Amphibians_part_006.fasta.fna
+Amphibians_part_007.fasta.fna
+Amphibians_part_008.fasta.fna
+Amphibians_part_009.fasta.fna
+Amphibians_part_010.fasta.fna
+Birds_part_001.fasta.fna
+Birds_part_002.fasta.fna
+Birds_part_003.fasta.fna
+Birds_part_004.fasta.fna
+Birds_part_005.fasta.fna
+Birds_part_006.fasta.fna
+Birds_part_007.fasta.fna
+Birds_part_008.fasta.fna
+Birds_part_009.fasta.fna
+Birds_part_010.fasta.fna
+
+##### Total parts overview ########
+ ls fna_parts/*.fna | wc -l
+232
+
+# Parts per taxon
+ ls fna_parts/*.fna | sed 's/_part_.*//' | sed 's|fna_parts/||' | sort | uniq -c
+     10 Amphibians
+     12 Birds
+      7 Chordates_Outgroup
+     22 Fish
+      1 Fungi_Protists_part1.fna
+     54 Invertebrates
+     33 Mammalia_grCh38
+     89 Plants_Algae_Other
+      4 Reptiles
+(bowtie2) [davisee@n148 2026_SO_RefGen_Chordataheavy_curated]$
+
+
+------------------> they look good! We can start testing the cat/indexing script 
+
+###### going to start within bowtie2 conda env in interactivet environment to test 
+## bowtie2 index code testing on interactive node
+bashconda activate bowtie2
+
+# Set paths
+BASE="/data/imas_projects/ancient/share/Databases/2026_SO_RefGen_Chordataheavy_curated"
+PART="Fungi_Protists_part_001"
+DECOY="${BASE}/prokaryotic_decoy_withHuman.fna"
+FNA_DIR="${BASE}/fna_parts"
+IDX_DIR="${BASE}/indexes"
+
+# Test cat first to make sure streaming works
+cat ${FNA_DIR}/${PART}.fasta.fna ${DECOY} | grep "^>" | wc -l
+
+# If that looks right, run the index build
+bowtie2-build \
+    <(cat ${FNA_DIR}/${PART}.fasta.fna ${DECOY}) \
+    ${IDX_DIR}/${PART} ----> currently running on screen 11274.index_testing ** and interactive job is running
+
+ ############################ 11.05.2026 ##############
+
+ re-ran the index.tmp test files with increased time, corrected I/O logging and increased bowtie2-builder --threads 8 (from default 1)
+
+ ################# 13.05.2026 ##################
+
+ ru-running bowtie index with fungi again! 
+
+ --- walltime = 14.5 hours, mem.used = 132GB, CPU = 12, CPU% = 1200
+
+ ################### 21.05.2025 ##############################
+ --- goal --- i have to significantly reduce the size of my database. Hopefully to goal will majorly reduce the size of two off-target groups: plants_algae_other + invertebrates 
+ 	---> problem, off target for my project, but still ecologically important to the system, so balance
+
+ -- made a draft plan on the back of the newest flow chart to test
+ (1) reduce size of database significantly (so that way we can process it)
+ (2) make reduction still reproducible and / or flexible to other other systems
+
+
+ brainstorming ideas: 
+ (1) keeping taxonomic splitting the same, completely remove amphibians + reptiles from database, as there are no records in Sub-Antarctic islands, southern ocean, or antarctica 
+ (estimated reduction ~655 GB // ~15 parts)
+
+ (2) only have one representative genome per taxa_id (species) 
+ ########### CAVEAT ###### might need to split organelle genomes seperate from nuclear (do everything below twice then merge)
+ 		(a) create levels based on assembly_accession (chromosome > complete genome > contig)
+ 		(b) arrange by taxa_id and then assembly_accession descending order
+ 		(c) use distinct(taxa_id) to only take first distinct instance of taxa_id (which if levels are done correctly, will be the most annotated genome type for that species)
+ 		(d) run taxonomic assignment steps up to rank6(genera) #lines 1042 - 1060 to check taxonomic distribution of what is left 
+ 		(e) Review distributions at different ranks & see if there are over-represented genera or families. (probably yes)
+ 			(i) next step will be on groups with lots of species still (most likely the inverts + green things )
+ 		(f) find mathematical way to see general mean of genera/family represented (or species/ genera)
+ 		(g) if over-represented are over this mean value, "randomly" subsample mean value amount X of accession (of a species) to input into a list for that family // run recursively across all necessary families 
+ 		(h) merge all filtered tables back together, compare to original table (merged_tbl) that i used to build database from, and see reductions (hopefully a fair bit)
+
+ 		########### brainstorm meeting notes with Simon 22.05.2026 ##############
+# ma's legacy, i code like an engineer rather than a computer scientist # 
+
+#

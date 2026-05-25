@@ -1,0 +1,9 @@
+Mammalia_grCh38
+Birds
+Fish
+Amphibians
+Reptiles
+Chordates_Outgroup
+Invertebrates
+Fungi_Protists
+Plants_Algae_Other
