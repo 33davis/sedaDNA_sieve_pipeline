@@ -3799,4 +3799,5 @@ bowtie2-build \
  		########### brainstorm meeting notes with Simon 22.05.2026 ##############
 # ma's legacy, i code like an engineer rather than a computer scientist # 
 
-#
+### increase whitelist and try to also reduce downstream #### 
+
