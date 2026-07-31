@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+#####still needs to be configured to run on the HPC, but works on local environment or loaded on the HPC interactive session with taxonkit installed and taxdump downloaded to ~/.taxonkit
 # =============================================================================
 # AlgaeBase → NCBI TaxID + Full Lineage Pipeline
 # =============================================================================
