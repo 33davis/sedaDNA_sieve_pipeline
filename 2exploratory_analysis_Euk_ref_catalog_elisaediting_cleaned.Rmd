@@ -1,0 +1,1362 @@
+---
+title: "Exploratory Analysis of Eukaryotic Genome Reference Catalog"
+author: "Mikkel Winther Pedersen and added to by E. Elisa Davis"
+date: "`r Sys.Date()`"
+output: html_document
+---
+#### what is Needed before this .RMD?
+#1. Download Genbank + RefSeq metadata (script in Rosalind RefSeq2026) --> leading to eukaryote_master_database.tsv, this is a large metadata file
+#2. Have completed your local area "whitelist" --> list of taxa found in region with associated linages + Genbank Tax_ids
+#3. with taxonKit, created a taxon_path.tsv to attach lineages to eukaryote_master_database --> make taxonomic visualisation easier.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, fig.width = 8, fig.height = 5)
+library(readr)
+library(ggplot2)
+library(gghighlight)
+library(scales)
+library(tidyverse)
+library(dplyr)
+library(inflection)
+library(scales)
+library(stringr)
+
+
+```
+
+```{r load-data, echo=TRUE}
+# Load the metadata file containing eukaryotic genome assemblies
+wgs_euks <- read_delim("/Users/davisee/OneDrive - University of Tasmania/Documents/chapter2/raw data/eukaryote_master_database.tsv",
+                       delim = "\t", escape_double = FALSE, trim_ws = TRUE)
+
+so_RAMS_list <- read_delim("C:/Users/davisee/OneDrive - University of Tasmania/Documents/chapter2/raw data/RAMS_alleukaryote_taxlist_20260224/WoRMS_RAMS_2026-02-01/RAMS_SO_whitelist_complete.tsv", 
+                           delim = "\t", escape_double = FALSE, trim_ws = TRUE)
+clean_SO_RAMS_list <- so_RAMS_list %>%
+  filter(!is.na(tax_id))
+so_genomes <- clean_SO_RAMS_list[,2]
+colnames(so_genomes) <- c("tax_id")
+
+
+colnames(wgs_euks)
+
+# Assigning appropriate column names
+colnames(wgs_euks) <- c(
+  "assembly_accession", "bioproject_accession","biosample_common_name", "biosample_description",
+  "tax_id", "organism_name", "source_db", "biosample_owner",
+  "biosample_host","biosample_location", "biosample_isolation", "biosample_ecotype",
+  "assembly_level", "contig_l50", "contig_n50", "gaps_between_scaffolds",
+  "atgc_count", "gc_percent", "genome_coverage", "component_sequences", "contigs", "organelles",
+  "scaffolds", "scaffold_l50", "scaffold_n50", "chromosomes",
+  "sequence_length", "ungapped_length", "organelle_description", "organelle_sequence_length"
+)
+
+wgs_euks$is_SO <- wgs_euks$tax_id %in% so_genomes$tax_id
+# check how many are iridian genomes
+table(wgs_euks$is_SO)
+so_taxa <- wgs_euks %>% filter(is_SO == TRUE) %>% pull(tax_id) %>% n_distinct()
+print(so_taxa)
+noso_taxa <- wgs_euks %>% filter(is_SO == FALSE) %>% pull(tax_id) %>% n_distinct()
+print(noso_taxa)
+so_taxa / (so_taxa + noso_taxa)
+
+```
+
+
+
+```{r preview-db, echo=TRUE}
+# Preview the unique databases included, and rename the source_db's 
+unique(wgs_euks$source_db)
+wgs_euks$source_db <- gsub("SOURCE_DATABASE_", "", wgs_euks$source_db)
+wgs_euks_review <- wgs_euks[wgs_euks$source_db == "Source Database", ]
+#remove extraneous rows that have no information
+wgs_euks <- wgs_euks[wgs_euks$source_db != "Source Database", ]
+unique(wgs_euks$source_db)
+#finish clean up
+wgs_euks$genome_coverage <- as.numeric(gsub("x", "", wgs_euks$genome_coverage))
+wgs_euks$tax_id <- as.character(wgs_euks$tax_id)
+
+```
+```{r rams-taxonomy-exploration, echo=TRUE}
+# Exploratory summary of phylum/class diversity in RAMS SO whitelist
+# Run this first to inform target group binning decisions
+
+so_RAMS_list %>%
+  distinct(tax_id, phylum, class) %>%
+  count(phylum, class) %>%
+  arrange(desc(n)) %>%
+  print(n = Inf)
+```
+
+```{r rams-target-groups, echo=TRUE}
+# Assign target groups based on phylum and class
+# Ecologically important SO groups kept separate, remainder collapsed
+
+so_RAMS_list <- so_RAMS_list %>%
+  mutate(
+    target_group = case_when(
+      # Vertebrates
+      phylum == "Chordata" & class %in% c("Actinopteri",
+                                           "Chondrichthyes",
+                                           "Hyperoartia",
+                                           "Myxini")            ~ "Fish",
+      phylum == "Chordata" & class == "Mammalia"                 ~ "Mammalia",
+      phylum == "Chordata" & class == "Aves"                     ~ "Birds",
+      phylum == "Chordata" & class %in% c("Ascidiacea",
+                                           "Thaliacea",
+                                           "Appendicularia")     ~ "Tunicata",
+      phylum == "Chordata"                                        ~ "Chordata_Other",
+
+      # Major SO invertebrate phyla
+      phylum == "Arthropoda" & class %in% c("Malacostraca",
+                                           	"Ostracoda", 
+                                           "Hexactinellida") ~ "Crustaceans_Artropoda",
+      phylum == "Arthropoda" & class =="Pycnogonida"  ~ "SeaSpiders_Arthropoda",
+      phylum == "Mollusca"                                        ~ "Mollusca",
+      phylum == "Echinodermata"                                   ~ "Echinodermata",
+      phylum == "Annelida"                                        ~ "Annelida",
+      phylum == "Porifera"                                        ~ "Porifera",
+      phylum == "Cnidaria"                                        ~ "Cnidaria",
+      phylum == "Bryozoa"                                         ~ "Bryozoa",
+      phylum == "Nematoda"                                        ~ "Nematoda",
+      phylum == "Platyhelminthes"                                 ~ "Platyhelminthes",
+
+      # Important SO protist groups
+      phylum == "Foraminifera"                                    ~ "Foraminifera",
+      phylum == "Bacillariophyta"                                 ~ "Diatoms",
+      phylum == "Ciliophora"                                      ~ "Ciliophora",
+
+      # Smaller but real SO groups collapsed
+      phylum %in% c("Chaetognatha", "Brachiopoda", "Nemertea",
+                    "Kinorhyncha", "Acanthocephala",
+                    "Ctenophora", "Hemichordata")                 ~ "Minor_Invertebrates",
+
+      # Fungi and plants
+      phylum %in% c("Ascomycota", "Basidiomycota")               ~ "Fungi",
+      phylum == "Streptophyta"  & class !%in% ("Magno")                                  ~ "Plants",
+
+      TRUE                                                        ~ "Other"
+    )
+  )
+
+cat("RAMS target group breakdown:\n")
+print(table(so_RAMS_list$target_group, useNA = "always"))
+```
+
+```{r rams-target-groups-barplot, echo=TRUE}
+# Bar chart — unique taxa per target group
+
+so_RAMS_list %>%
+  distinct(tax_id, target_group) %>%
+  count(target_group, name = "n") %>%
+  mutate(target_group = fct_reorder(target_group, n)) %>%
+  ggplot(aes(x = target_group, y = n, fill = target_group)) +
+    geom_col(show.legend = FALSE) +
+    geom_text(aes(label = n), hjust = -0.2, size = 3.5) +
+    coord_flip() +
+    labs(
+      title = "RAMS Southern Ocean Whitelist — Taxa per Target Group",
+      x     = "Target Group",
+      y     = "Number of Taxa"
+    ) +
+    theme_minimal() +
+    theme(axis.text.y = element_text(size = 10))
+```
+
+```{r rams-target-groups-donut, echo=TRUE}
+# Donut chart — proportional composition of RAMS whitelist target groups
+
+rams_donut_data <- so_RAMS_list %>%
+  distinct(tax_id, target_group) %>%
+  count(target_group, name = "n") %>%
+  arrange(desc(n)) %>%
+  mutate(
+    pct          = n / sum(n),
+    target_group = fct_reorder(target_group, n),
+    label        = ifelse(
+      pct * 100 >= 2,
+      paste0(target_group, "\n", n,
+             " (", scales::percent(pct, accuracy = 0.1), ")"),
+      ""
+    )
+  )
+
+ggplot(rams_donut_data, aes(x = 2, y = n, fill = target_group)) +
+  geom_col(width = 1, color = "white") +
+  coord_polar(theta = "y") +
+  geom_text(
+    aes(x = 2.6, label = label),
+    position = position_stack(vjust = 0.5),
+    size = 3
+  ) +
+  xlim(0.5, 3.2) +
+  labs(title = "RAMS Southern Ocean Whitelist — Target Group Composition") +
+  theme_void() +
+  theme(legend.position = "none",
+        plot.title = element_text(hjust = 0.5))
+```
+
+```{r rams-target-groups-stacked, echo=TRUE}
+# Stacked bar — class breakdown within each target group
+
+so_RAMS_list %>%
+  distinct(tax_id, target_group, class) %>%
+  count(target_group, class) %>%
+  mutate(target_group = fct_reorder(target_group, n, sum)) %>%
+  ggplot(aes(x = target_group, y = n, fill = class)) +
+    geom_col() +
+    coord_flip() +
+    labs(
+      title = "RAMS Whitelist — Class Breakdown within Target Groups",
+      x     = "Target Group",
+      y     = "Number of Taxa",
+      fill  = "Class"
+    ) +
+    theme_minimal() +
+    theme(legend.position = "none",
+      axis.text.y     = element_text(size = 10),
+      legend.text     = element_text(size = 7),
+      legend.key.size = unit(0.4, "cm")
+    )
+```
+### In the terminal/on server
+
+<!-- ``` bash -->
+<!-- conda install -c bioconda taxonkit -->
+<!-- wget -c https://ftp.ncbi.nih.gov/pub/taxonomy/taxdump.tar.gz  -->
+<!-- tar -zxvf taxdump.tar.gz -->
+
+<!-- mkdir -p $HOME/.taxonkit -->
+<!-- cp names.dmp nodes.dmp delnodes.dmp merged.dmp $HOME/.taxonkit -->
+
+<!-- cut -f4 wgs_eukaryota.metadata_filter.short.tsv | tail -n+2 | taxonkit reformat2 - > taxon_paths.tsv -->
+<!-- ``` -->
+
+```{r join tables, echo=TRUE}
+
+taxon_paths <- read_tsv("/Users/davisee/OneDrive - University of Tasmania/Documents/chapter2/raw data/taxon_paths.tsv", 
+    col_names = c("tax_id", "taxonomic_path"),
+    trim_ws = TRUE,
+    col_types = cols(tax_id = col_character(),
+  taxonomic_path = col_character()
+  ))
+wgs_euks2 <- wgs_euks |> inner_join(taxon_paths)
+
+
+  
+### Lets plot the reference metadata out first
+
+# Bar chart of genome counts by source database
+ggplot(wgs_euks2, aes(x = source_db)) +
+  geom_bar(fill = "steelblue") +
+  geom_text(stat = "count", aes(label = after_stat(count)), vjust = -0.3, size = 4) +
+  labs(title = "", x = "", y = "Number of Genomes") +
+  theme_minimal() 
+```
+
+```{r barplot-stacked, echo=TRUE}
+# Stacked bar chart of assembly levels within each source database
+ggplot(wgs_euks2, aes(x = source_db, fill = assembly_level)) +
+  geom_bar(position = "stack") +
+  labs(title = "", x = "Source Database", y = "Number of Genomes", fill = "Assembly Level") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+```{r barplot-proportional, echo=TRUE}
+# Proportional stacked bar chart of assembly levels per source
+wgs_euks2 %>% 
+#  filter(is_SO==FALSE)%>%
+ggplot(aes(x = source_db, fill = assembly_level)) +
+  geom_bar(position = "fill") +
+  labs(title = "proportional chart of all Genomes all assembly levels", x = "Source Database", y = "Proportion of Genomes", fill = "Assembly Level") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+```{r apply-levels-assembly_level, echo = TRUE}
+#to make DB filtering easier after understanding what types of assemblies are here, we are going to do some ranking.
+unique(wgs_euks2$assembly_level)
+#quality of assemblies goes "Chromosome", "complete Genome", "Contig", "Scaffold", so if we create these levels, we can understand white are the best assemblies either per accession, per species(tax_id) or both. This should signifcantly decrease database size. 
+
+wgs_euks2$assembly_level <- factor(wgs_euks2$assembly_level, levels = c("Chromosome", "Complete Genome", "Contig", "Scaffold"))
+
+levels(wgs_euks2$assembly_level)
+
+```
+```{r barplot-organelle-proportional, echo=TRUE}
+#lets also explore what the scope of organelles is as well
+# is there a skew of certain organelles at certain assembly levels? 
+wgs_euks2 %>% 
+ggplot(aes(x = organelle_description, fill = assembly_level)) +
+  geom_bar(position = "fill") +
+  labs(title = "proportional chart of all genome organelle type", x = "Organelle Description", y = "Proportion of Genomes", fill = "Assembly Level") +
+  facet_wrap(~ source_db) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+# so this is really good to know, as most of the NA's are probably nuclear data where they did not 
+
+```{r barplot-SO genomes, echo=TRUE}
+wgs_euks2 %>% 
+  filter(is_SO==TRUE)%>%
+ggplot(aes(x = source_db, fill = assembly_level)) + 
+  geom_bar() +
+   geom_text(stat = "count", 
+             aes(label = after_stat(count)),
+             size = 3, position = position_stack(vjust = 0.5)) + 
+  labs(title = "Register of Marine Antarctic Species Found", x = "Source Database", y = "Number of Genomes", fill = "Assembly Level") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+```{r barplot-organelle-proportional, echo=TRUE}
+#lets also explore what the scope of organelles is as well
+#Proportional stacked bar chart of organelle type per source
+wgs_euks2 %>%
+  filter(is_SO==TRUE)%>%
+ggplot(aes(x = source_db, fill = organelle_description)) +
+  geom_bar(position = "fill") +
+  labs(title = "Southern Ocean Taxa: proportional chart of all genome organelle type", x = "Source Database", y = "Proportion of Genomes", fill = "Orgenelle Description") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+```
+## in these cases, NA usually refers to nuclear data 
+```{r joining-tables, echo=TRUE}
+#Let's review rarer organelle types to see if they would be good to keep in or not
+unique(wgs_euks2$organelle_description)
+#if I do filter, and it will be good to, would need to filter it by organelle_sequence_length, not ungapped_sequence_legnth & gapped_sequence_length
+apico <- wgs_euks2 %>% filter(organelle_description=="Apicoplast") #apicoplasts might be good to keep bc pathogenitic groups, with cutoff 25,000 bp for organelle length
+chloro <- wgs_euks2 %>% filter(organelle_description=="Chloroplast")
+plast <- wgs_euks2 %>% filter(organelle_description=="Plastid") # also use 100,000 bp cutoff 
+what <- wgs_euks2 %>% filter(organelle_description=="Mitochondrial Plasmid") #agricultural plasmid samples, REMOVE
+misc <- wgs_euks2 %>% filter(organelle_description=="Mitochondrial Miscellaneous") # just four castor oil plant samples, REMOVE
+mito <- wgs_euks2 %>% filter(organelle_description=="Mitochondrion")
+chromo <- wgs_euks2 %>% filter(organelle_description == "Chromosome" | is.na(organelle_description))
+# #remove the miscelleanous and mitochondrial plasmid after checking 
+wgs_euks2 <- wgs_euks2 %>% 
+  filter(!organelle_description %in% c("Mitochondrial Plasmid",
+                                      "Mitochondrial Miscellaneous"))
+
+#check to make sure misc filter worked properly, they should no longer be on the list! 
+unique(wgs_euks2$organelle_description)
+```
+```{r filtering-organelle-dbs, echo = TRUE}
+#check that each of the organelle vectors have the assembly_accsion levels that we applied earlier!
+#per organelle, going to do the following steps
+#(1)check that levels continued over for assembly_accession
+#arrange by tax_id and then assembly acession, so for each taxa_id, assembly_acession goes first 
+#run (distinct(tax_id, .keep_all=TRUE))
+
+## ----------------- Apicoplast ----------------------- ##
+levels(apico$assembly_level)
+
+apico_slim <- apico %>%
+  group_by(tax_id) %>%
+  arrange(assembly_level, desc(genome_coverage)) %>%
+  distinct(tax_id, .keep_all = TRUE) %>%
+  ungroup()
+#View(head(apico_slim, n = 5))
+
+## ----------------- Chloroplast ---------------------- ##
+levels(chloro$assembly_level)
+
+chloro_slim <- chloro %>%
+  group_by(tax_id) %>%
+  arrange(assembly_level) %>%
+  distinct(tax_id, .keep_all = TRUE)%>%
+  ungroup()
+#View(head(chloro_slim, n = 5))
+
+## ------------------ Plastid ------------------------- ##
+levels(plast$assembly_level)
+
+plast_slim <- plast %>%
+  group_by(tax_id) %>%
+  arrange(assembly_level) %>%
+  distinct(tax_id, .keep_all = TRUE)%>%
+  ungroup()
+#View(head(plast_slim, n = 5))
+
+## ---------------- Mitochondrion --------------------- ##
+levels(mito$assembly_level)
+
+mito_slim <- mito %>%
+  group_by(tax_id) %>%
+  arrange(assembly_level) %>%
+  distinct(tax_id, .keep_all = TRUE)%>%
+  ungroup()
+#View(head(mito_slim, n = 5))
+
+## --------------- Chromosomes + NA (assumed nuclear) ------------ ##
+levels(chromo$assembly_level)
+
+chromo_slim <- chromo %>%
+  group_by(tax_id) %>%
+  arrange(assembly_level) %>%
+  distinct(tax_id, .keep_all = TRUE)%>%
+  ungroup()
+#View(head(chromo_slim, n = 5))
+
+
+```
+```{r merge-back-db, echo=TRUE}
+#merge all of the slim (filtered) db's back togethern to make to slim_wgs_euks2
+############ --- merge all of them back together!!! ---- ########
+wgs_euks2_slim <- bind_rows(chromo_slim, mito_slim, chloro_slim, plast_slim, apico_slim)
+
+wgs_euks2_slim <- wgs_euks2_slim %>%
+  mutate(assembly_level = as.character(assembly_level))
+
+#check if the merge worked correctly 
+wgs_euks2_slim %>% count(organelle_description)
+```
+
+```{r violin-plot, echo = TRUE}
+## Review and filter out lower quality organelle assemblies ---> will then only catch complete organelles 
+#Mitochondria Filter (most important for RAMS) organelle_length >= 10,000 bp 
+##1 Check any that don't meet filter to see if they are Southern Ocean species
+wgs_euks2_slim %>%
+  filter(is_SO==FALSE) %>%
+ggplot(aes(x = organelle_description, y = organelle_sequence_length, fill = assembly_level)) +
+    geom_violin(alpha = 0.5, na.rm = TRUE) +
+    geom_boxplot(width = 0.1, outlier.shape = NA, alpha = 0.7, color = "black") +
+    facet_wrap(~ source_db) +
+    scale_y_continuous() +
+    labs(
+        title = "organelle length distribution by assembly Level",
+        x = "Assembly Level",
+        y = "Length bp", 
+        fill = ""
+    ) +
+    theme_minimal() +
+    theme(legend.position = "bottom")
+
+### some oikopleura samples that are actually really important to keep in. so going to lower the cutoff t0 9000bp
+```
+
+
+```{r summary - SO scaffold genome exploration, echo=TRUE}
+#isolate all all SO genomes at scaffold level to see what type of taxa they are
+so_wgs_euks2_slim_subset <- wgs_euks2 %>% ##### MAKING A BIG CHANGE HERE
+  filter(is_SO==TRUE) %>%
+  mutate(assembly_level = as.character(assembly_level))
+# it is a lot of important species, I think it would be good to keep them all in.
+
+# length(unique(so_wgs_euks2_slim_subset$tax_id)) ## 143/ 558 SO taxa represented
+# str_count(unique(so_wgs_euks2_slim_subset$tax_id)) ## each taxa represented by more than one genome 
+
+noso_wgs_euks2_slim <- wgs_euks2_slim %>%
+  filter(is_SO==FALSE) 
+
+#Overall, would be good to keep in. 
+# So, to make processing more distinct, let's split data going forward into two, the so_wgs_euks2_slim_subset, and then the filted_ccg_noSO_wgs_euks2_slim ----> wgs_euks3! 
+```
+
+``` {r joining-tables, echo = TRUE}
+#filtering organelles#
+
+# # 1) Mitochondrion: drop if length < 10,000 OR length is NA, but only for mito rows
+# # 2) Chloroplast/Plastid: drop if length < 100,000 OR length is NA, only for those rows
+# # 3) Apicoplast: drop if length < 30,000 OR length is NA, only for those rows
+
+
+
+noso_wgs_euks2_slim_filtered <- noso_wgs_euks2_slim %>%
+  mutate(
+    keep = case_when(
+      # Mitochondrion: require length >= 10,000 and not NA
+      organelle_description == "Mitochondrion" ~
+        !is.na(organelle_sequence_length) & organelle_sequence_length >= 10000,
+
+      # Chloroplast or Plastid: require length >= 100,000 and not NA
+      organelle_description %in% c("Chloroplast", "Plastid") ~
+        !is.na(organelle_sequence_length) & organelle_sequence_length >= 100000,
+
+      # Apicoplast: require length >= 30,000 and not NA
+      organelle_description == "Apicoplast" ~
+        !is.na(organelle_sequence_length) & organelle_sequence_length >= 30000,
+
+      # Everything else (including organelle_description == NA): keep
+      TRUE ~ TRUE
+    )
+  ) %>%
+  filter(keep) %>%
+  select(-keep)
+```
+
+```{r barplot-stacked, echo = TRUE}
+## create new data with just assembly levels are most trustworthy after filtering by organelle length
+# wgs_euks3 <- noso_wgs_euks2_slim_michap_filtered %>%
+#   filter(assembly_level %in% c("Chromosome", "Complete Genome"))
+
+# Define your level tiers
+high_ok   <- c("Chromosome", "Complete Genome")
+low_block <- c("Scaffold", "Contig")
+#low_block <- c("Scaffold")
+
+# 1) Collapse to *assembly-level decision*
+by_asm <- noso_wgs_euks2_slim_filtered %>%
+  filter(!is.na(assembly_accession), assembly_accession != "") %>%
+  group_by(assembly_accession) %>%
+  summarise(
+    has_high = any(assembly_level %in% high_ok, na.rm = TRUE),
+    has_low  = any(assembly_level %in% low_block, na.rm = TRUE),
+    .groups  = "drop"
+  )
+
+# 2) Keep only assemblies that have high and do NOT have any low
+asm_keep <- by_asm %>%
+  filter(has_high, !has_low) %>%
+  pull(assembly_accession)
+
+# 3) From the original table, retain rows for those assemblies (if you still need rows)
+wgs_euks3 <- noso_wgs_euks2_slim_filtered %>%
+  filter(assembly_accession %in% asm_keep)
+
+# 4) Immediately pick one representative row per assembly for downstream work
+#    Prefer REFSEQ over GENBANK; break ties by longer lineage string
+wgs_euks3_assemblies <- wgs_euks3 %>%
+  arrange(desc(source_db == "REFSEQ"), desc(nchar(taxonomic_path))) %>%
+  distinct(assembly_accession, .keep_all = TRUE)
+
+
+# proportional Stacked bar chart of just highest assembly levels
+
+wgs_euks3_assemblies %>% 
+ggplot(aes(x = assembly_level, fill = source_db)) + 
+  geom_bar() +
+   geom_text(stat = "count", 
+             aes(label = after_stat(count)),
+             size = 3, position = position_stack(vjust = 0.5)) + 
+  labs(title = "Chromosome & Complete Genome assembled Chordata Reference Genomes", x = "Assembly Level", y = "Number of Genomes", fill = "Source Database") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+
+
+
+```{r length_ratio, echo=TRUE}
+# Step 1: Calculate length_ratio for both datasets 
+wgs_euks3 <- wgs_euks3 %>%
+  mutate(len_ratio = ifelse(
+    is.na(ungapped_length) | is.na(sequence_length) | sequence_length == 0,
+    NA_real_,
+    ungapped_length / sequence_length
+  ))
+
+wgs_euks3_assemblies <- wgs_euks3_assemblies %>%
+  mutate(len_ratio = ifelse(
+    is.na(ungapped_length) | is.na(sequence_length) | sequence_length == 0,
+    NA_real_,
+    ungapped_length / sequence_length
+  ))
+
+# Step 2: Density plot colored by assembly_level and faceted by source_db
+ggplot(wgs_euks3, aes(x = assembly_level, y = len_ratio, fill = assembly_level)) +
+    geom_violin(alpha = 0.5, na.rm = TRUE) +
+    geom_boxplot(width = 0.1, outlier.shape = NA, alpha = 0.7, color = "black") +
+    facet_wrap(~ source_db) +
+    scale_y_continuous() +
+    labs(
+        title = "Length Ratio Distribution by high resolution Assembly Level",
+        x = "Assembly Level",
+        y = "Length Ratio"
+    ) +
+    theme_minimal() +
+    theme(legend.position = "none")
+
+```
+
+```{r scatter-n50-l50, echo=TRUE}
+# Scatter plot: Scaffold N50 vs Scaffold L50, faceted by source
+ggplot(so_wgs_euks2_slim_subset, aes(x = scaffold_n50, y = scaffold_l50)) +
+  geom_point(aes(size = contigs), alpha = 0.7) +
+  facet_wrap(~ source_db) +
+  labs(title = "RAMS taxa: All genomes no filtered", x = "Scaffold N50", y = "Scaffold L50") +
+  theme_minimal()
+
+#test
+ggplot(wgs_euks3, aes(x = scaffold_n50, y = scaffold_l50)) +
+  geom_point(aes(size = contigs), alpha = 0.7) +
+  facet_wrap(~ source_db) +
+  labs(title = "REfSeq and Genbank Chromosome + Complete Genomes, Organelle Filtered", x = "Scaffold N50", y = "Scaffold L50") +
+  theme_minimal()
+
+
+```
+
+```{r scatter-n50-contigs-gc, echo=TRUE}
+# Scatter plot: Scaffold N50 vs Contigs, filled by GC content
+ggplot(so_wgs_euks2_slim_subset, aes(x = scaffold_n50, y = contigs)) +
+  geom_point(aes(size = contigs, fill = gc_percent), shape = 21, color = "black", alpha = 0.8) +
+  facet_wrap(~ source_db) +
+  labs(title = "RAMS taxa: All genomes no filtered", x = "Scaffold N50", y = "Number of contigs", fill = "GC Percent") +
+  theme_minimal()
+
+ggplot(wgs_euks3, aes(x = scaffold_n50, y = contigs)) +
+  geom_point(aes(size = contigs, fill = gc_percent), shape = 21, color = "black", alpha = 0.8) +
+  facet_wrap(~ source_db) +
+  labs(title = "REfSeq and Genbank Chromosome + Complete Genomes, Organelle Filtered", x = "Scaffold N50", y = "Number of contigs", fill = "GC Percent") +
+  theme_minimal()
+```
+ 
+```{r genomes_lost_contigs, echo=TRUE}
+
+# Define thresholds (descending from 500,000 in steps of 10,000)
+thresholds <- seq(500000, 0, by = -100)
+
+# For each source_db, count genomes <= threshold
+threshold_by_source <- expand.grid(
+  threshold = thresholds,
+  source_db = unique(wgs_euks3$source_db)
+) %>%
+  rowwise() %>%
+  mutate(n_remaining = sum(
+    wgs_euks3$source_db == source_db &
+      wgs_euks3$contigs <= threshold,
+    na.rm = TRUE
+  )) %>%
+  ungroup()
+
+# Make a plot by split databases
+ggplot(threshold_by_source, aes(x = threshold, y = n_remaining, color = source_db)) +
+  geom_point(size = 1) +
+  scale_x_reverse(breaks = seq(0, 500000, 50000), labels = comma) +
+  scale_y_continuous(labels = comma) +
+  labs(
+    title = "Genome Retention by Contig Threshold, Split by Source DB",
+    x = "Maximum Number of Contigs (Threshold)",
+    y = "Number of Genomes Retained",
+    color = "Source DB"
+  ) +
+  theme_minimal()
+
+
+# Lets then merge the two sources and for each threshold, count genomes with contigs <= threshold
+threshold_counts <- data.frame(threshold = thresholds) %>%
+  rowwise() %>%
+  mutate(n_remaining = sum(wgs_euks3$contigs <= threshold, na.rm = TRUE)) %>%
+  ungroup()
+
+# Reverse x and y for proper elbow detection
+x <- rev(threshold_counts$threshold)
+y <- rev(threshold_counts$n_remaining)
+
+# Detect elbow (tipping point)
+elbow_index <- inflection::findiplist(x, y, index = 1)
+tipping_threshold <- x[elbow_index]
+n_at_tipping <- y[elbow_index]
+
+# Plot with tipping point highlighted
+ggplot(threshold_counts, aes(x = threshold, y = n_remaining)) +
+  geom_point(size = 2, color = "steelblue") +
+  geom_line(color = "steelblue") +
+  geom_vline(xintercept = tipping_threshold, linetype = "dashed", color = "red") +
+  geom_text(
+    data = data.frame(
+      threshold = tipping_threshold,
+      n_remaining = n_at_tipping,
+      label = paste0("Tipping Point: ", tipping_threshold, " contigs")
+    ),
+    aes(x = threshold, y = n_remaining, label = label),
+    inherit.aes = FALSE,
+    vjust = -1, hjust = 1.1, color = "red"
+  ) +
+  scale_x_reverse(breaks = seq(0, 500000, 50000), labels = comma) +
+  scale_y_continuous(labels = comma) +
+  labs(
+    title = "Tipping Point in Genome Retention Curve",
+    x = "Contig Threshold",
+    y = "Number of Genomes Retained"
+  ) +
+  theme_minimal()
+
+elbows <- inflection::findiplist(x, y, index = 1)
+tipping_thresholds <- x[elbows]
+
+con_thres <- max(tipping_thresholds, na.rm = TRUE)
+
+
+```
+
+
+```{r density-gc, echo=TRUE}
+# Density plot of GC percent by assembly level
+ggplot(wgs_euks3, aes(x = as.numeric(gc_percent), fill = assembly_level)) +
+  geom_density(alpha = 0.6) +
+  facet_wrap(~ source_db) +
+  labs(title = "REfSeq and Genbank Chromosome + Complete Genomes, Organelle Filtered", x = "GC Percent", y = "Density", fill = "Assembly Level") +
+  theme_minimal()
+ggplot(so_wgs_euks2_slim_subset, aes(x = as.numeric(gc_percent), fill = assembly_level)) +
+  geom_density(alpha = 0.6) +
+  facet_wrap(~ source_db) +
+  labs(title = "RAMS taxa: All genomes no filtered", x = "GC Percent", y = "Density", fill = "Assembly Level") +
+  theme_minimal()
+```
+
+```{r ungapped-vs-total, echo=TRUE}
+# Scatter plot comparing ungapped and total sequence lengths
+ggplot(wgs_euks3, aes(x = ungapped_length, y = sequence_length)) +
+  geom_point(alpha = 0.8, aes(color = assembly_level)) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "lightgrey") +
+  facet_wrap(~ source_db) +
+  labs(title = "REfSeq and Genbank Chromosome + Complete Genomes, Organelle Filtered", x = "Ungapped Sequence Length", y = "Total Sequence Length") +
+  theme_minimal()
+ggplot(so_wgs_euks2_slim_subset, aes(x = ungapped_length, y = sequence_length)) +
+  geom_point(alpha = 0.8, aes(color = assembly_level)) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "lightgrey") +
+  facet_wrap(~ source_db) +
+  labs(title = "RAMS taxa: All genomes no filtered", x = "Ungapped Sequence Length", y = "Total Sequence Length") +
+  theme_minimal()
+
+
+```
+
+
+```{r ungapped-vs-total-ratio, echo=TRUE}
+# how many sequence are 10% longer than their ungapped sequence length?
+
+wgs_euks3 %>% filter(source_db == "GENBANK") |> 
+  filter(sequence_length / ungapped_length  > 1.1) %>% 
+  nrow()
+wgs_euks3_assemblies %>% filter(source_db == "GENBANK") |> 
+  filter(sequence_length / ungapped_length  > 1.1) %>% 
+  nrow()
+# Let's add a length_ratio to the dataframe
+wgs_euks3 <- wgs_euks3 %>%
+  mutate(len_ratio = (sequence_length / ungapped_length))
+summary(wgs_euks3$len_ratio)
+wgs_euks3_assemblies <- wgs_euks3_assemblies %>%
+  mutate(len_ratio = (sequence_length / ungapped_length))
+
+
+#add length ratio to southern ocean ones
+so_wgs_euks2_slim_subset <- so_wgs_euks2_slim_subset %>%
+  mutate(len_ratio = (sequence_length / ungapped_length))
+
+
+summary(wgs_euks3_assemblies$len_ratio)
+len_ratio <- 1.1 
+```
+
+### plots the points filtered by the len_ratio threshold
+
+```{r plot-len_ratio-boxplot, echo=TRUE}
+# Step 2: Density plot colored by assembly_level and faceted by source_db
+ggplot(wgs_euks3_assemblies, aes(x = assembly_level, y = len_ratio, fill = assembly_level)) +
+    geom_violin(alpha = 0.5, na.rm = TRUE) +
+    geom_boxplot(width = 0.1, outlier.shape = NA, alpha = 0.7, color = "black") +
+    geom_jitter() +
+    facet_wrap(~ source_db) +
+    scale_y_continuous() +
+    labs(
+        title = "Length Ratio Distribution by Assembly Level",
+        x = "Assembly Level",
+        y = "How much longer is the total sequence length vs the ungapped length"
+    ) +
+    theme_minimal() +
+    theme(legend.position = "none")
+```
+
+```{r plot-len_ratio-filter, echo=TRUE}
+ggplot(wgs_euks3_assemblies, aes(x = ungapped_length, y = sequence_length)) +
+  geom_point(alpha = 0.8, aes(color = assembly_level)) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "lightgrey") +
+  facet_wrap(~ source_db, drop = FALSE) +  # This keeps all source_db panels
+  gghighlight(len_ratio > 1.1, use_direct_label = FALSE) +
+  labs(
+    title = "Ungapped vs Total Sequence Length (Highlighting len_ratio > 1.1)",
+    x = "Ungapped Sequence Length",
+    y = "Total Sequence Length"
+  ) +
+  theme_minimal()
+
+```
+
+### plots the points filtered by the len_ratio threshold and that are register Antarctic Marine species (RAMS list - Chordata) 
+# ```{r plot-len_ratio-filter-iridian, echo=TRUE}
+# ggplot(wgs_euks2_slim, aes(x = ungapped_length, y = sequence_length)) +
+#   geom_point(alpha = 0.8, aes(color = assembly_level)) +
+#   geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "lightgrey") +
+#   facet_wrap(~ source_db, drop = FALSE) +
+#   gghighlight(is_SO == TRUE, use_direct_label = FALSE) +
+#   labs(
+#     title = "Ungapped vs Total Sequence Length (Highlighting Iridian Genomes)",
+#     x = "Ungapped Sequence Length",
+#     y = "Total Sequence Length"
+#   ) +
+#   theme_minimal()
+
+<!-- ``` -->
+
+
+### We found quite a bit of NAs in the scaffold_n50, lets see which assembly level they are
+### This will be good to check for both DB, will it still be too large? 
+
+#write.csv(wgs_euks2_slim, file ="wgs_euks2_slim.csv")
+
+```{r counting-nas, echo=TRUE}
+# # Count NA values per column and source_db
+# na_counts <- wgs_euks3 %>%
+#   select(source_db, scaffold_n50, contigs) %>%
+#   pivot_longer(cols = c(scaffold_n50, contigs), names_to = "variable", values_to = "value") %>%
+#   mutate(is_na = is.na(value)) %>%
+#   group_by(source_db, variable) %>%
+#   summarise(n = sum(is_na), .groups = "drop") %>%
+#   complete(source_db, variable, fill = list(n = 0))
+# 
+# # Plot grouped by source_db, faceted by column
+# ggplot(na_counts, aes(x = source_db, y = n, fill = source_db)) +
+#   geom_col(show.legend = FALSE) +
+#   facet_wrap(~ variable, scales = "free_y") +
+#   labs(title = "Number of NAs by Column and Source DB",
+#        x = "Source DB",
+#        y = "Number of NAs") +
+#   theme_minimal()
+# 
+# 
+# # Count NAs in scaffold_n50 and show their assembly_levels
+# na_pie_data <- wgs_euks3   %>%
+#   filter(is.na(scaffold_n50)) %>%
+#   count(assembly_level) %>%
+#   mutate(percentage = n / sum(n),
+#          label = paste0(assembly_level, " (", round(percentage * 100, 1), "%)"))
+# 
+# ggplot(na_pie_data, aes(x = "", y = n, fill = assembly_level)) +
+#   geom_col(width = 1, color = "white") +
+#   coord_polar(theta = "y") +
+#   geom_text(aes(label = label), position = position_stack(vjust = 0.5), size = 4) +
+#   labs(title = "Distribution of NAs in scaffold_n50 by Assembly Level",
+#        x = NULL, y = NULL, fill = "Assembly Level") +
+#   theme_void()
+```
+
+Doing a manual check on these the genomes looks ok, one option could be to filter these based on the coverage they have. We observe a suspiscious decline in the lower end of the coverage. This high value is caused by the extreme high values and hence skewness in the data. We therefore selected a hard thresholds of 10. For setting the contigs we use the .01 / .99 percentile of RefSeq stats to filter the Genbank genomes. as well as the length_ratio
+
+
+One idea is to use the RefSeq as a gold standard, and use the scaffold_n50 and contigs statistics to filter the genbank.
+
+
+Elisa: for my stuff, this standard above could be good to filter SO_genomes list, but then to a hard cut-off of taking out all scaffold level assemblies, need to have a think to set contig-level assembly filters (more stringent length_ratio, coverage, ATGC percentage). 
+
+For So_genomes, need to probably do in depth based R markdown on included scaffold 
+(following these derived stringent thresholds and stuff. So basically, should create a new version + 2nd part to do SO genome curation analysis and the larger one.)
+
+```{r scaffols_n50_NA_contig_genome_coverage, echo=TRUE}
+
+# Setting thresholds
+scaf_thres <- quantile(wgs_euks$scaffold_n50[wgs_euks$source_db == "REFSEQ"], 0.01, na.rm = TRUE)
+con_thres <- quantile(wgs_euks$contigs[wgs_euks$source_db == "REFSEQ"], 0.99, na.rm = TRUE) # Is now set as the tipping point from the above elbow plot
+gen_cov_thres <- 25
+len_thres <- 1.1
+
+# Count how many will be filtered by this 
+highlighted_counts <- wgs_euks3_assemblies %>%
+  filter(
+    !(
+      (is.na(genome_coverage) | genome_coverage >= gen_cov_thres) &
+      (is.na(scaffold_n50)    | scaffold_n50 >= scaf_thres) &
+      (is.na(contigs)         | contigs <= con_thres) &
+      (is.na(len_ratio)         | len_ratio <= len_thres)
+    )
+  ) %>%
+  group_by(source_db) %>%
+  summarise(count = n())
+
+
+ggplot(wgs_euks3_assemblies, aes(x = genome_coverage, y = contigs)) +
+  geom_point(alpha = 0.7) +
+  facet_wrap(~ source_db) +
+  scale_x_log10() +
+  labs(
+    title = "",
+    x = "genome_coverage",
+    y = "contigs"
+  ) +
+  gghighlight(scaffold_n50 > scaf_thres, contigs < con_thres, genome_coverage >= gen_cov_thres, use_direct_label = FALSE) +
+  geom_text(
+    data = highlighted_counts,
+    aes(x = Inf, y = Inf, label = paste("To be filtered:", count)),
+    hjust = 1.1, vjust = 1.5,
+    inherit.aes = FALSE,
+    size = 4,
+    fontface = "bold",
+    color = "darkgrey"
+  ) +
+  theme_minimal()
+```
+
+```{r scatter-contigs-n50, echo=TRUE}
+# Contigs vs Scaffold N50
+# Filter input for plotting (remove NA and zero values for valid plotting)
+plot_data <- wgs_euks3_assemblies %>%
+  filter(!is.na(scaffold_n50), !is.na(contigs), scaffold_n50 > 0, contigs > 0)
+
+# Step 1: Filter and count per source_db (MATCH gghighlight thresholds)
+filtered_counts <- wgs_euks3_assemblies %>% filter(
+    (is.na(genome_coverage) | genome_coverage >= gen_cov_thres) &
+    (is.na(scaffold_n50) | scaffold_n50 >= scaf_thres) &
+    (is.na(contigs) | contigs <= con_thres) &
+      (is.na(len_ratio)         | len_ratio <= len_thres)
+  ) %>%
+  count(source_db, name = "filtered_n")
+
+# Step 2: Compute label positions (adjust x/y to avoid overlap)
+label_positions <- plot_data %>%
+  group_by(source_db) %>%
+  summarize(
+    x = quantile(contigs, 0.05, na.rm = TRUE),
+    y = max(scaffold_n50, na.rm = TRUE) * 0.95,
+    .groups = "drop"
+  )
+
+# Step 3: Join label data
+label_data <- left_join(filtered_counts, label_positions, by = "source_db")
+
+# Step 4: Create the plot
+ggplot(plot_data, aes(x = contigs, y = scaffold_n50)) +
+  geom_point(alpha = 0.7) +
+  facet_wrap(~ source_db) +
+  labs(
+    title = "Filtered Genome Count per Source DB",
+    x = "Number of Contigs",
+    y = "Scaffold N50"
+  ) +
+  theme_minimal() +
+  gghighlight(scaffold_n50 > scaf_thres, contigs < con_thres,genome_coverage >= gen_cov_thres, use_direct_label = FALSE) +
+  scale_x_continuous(labels = scales::label_comma()) +
+  geom_text(
+    data = label_data,
+    aes(x = x, y = y, label = paste("Kept genomes:", scales::comma(filtered_n))),
+    inherit.aes = FALSE,
+    size = 4,
+    hjust = 0,
+    fontface = "bold"
+  )
+```
+
+
+```{r filter-and-flag-large, echo=TRUE}
+# Apply quality thresholds to non-SO genomes
+# Always keep organelles; apply coverage/contig/length thresholds to nuclear assemblies
+
+org_whitelist <- c("Mitochondrion", "Apicoplast", "Plastid")
+
+wgs_euks3_flagged_large <- wgs_euks3 %>%
+  mutate(
+    keep = case_when(
+      organelle_description %in% org_whitelist ~ TRUE,
+      is.na(organelle_description) | organelle_description %in% c("Chromosome", "Chloroplast") ~
+        (is.na(genome_coverage) | genome_coverage >= gen_cov_thres) &
+        (is.na(scaffold_n50)    | scaffold_n50    >= scaf_thres)    &
+        (is.na(contigs)         | contigs         <= con_thres)     &
+        (is.na(len_ratio)       | len_ratio       <= len_thres),
+      TRUE ~ FALSE
+    )
+  )
+```
+
+```{r pie-filter-status, echo=TRUE}
+# Pie charts showing filter status (in vs out) per source database
+library(purrr)
+library(patchwork)
+
+pie_data <- wgs_euks3_flagged_large %>%
+  mutate(filter_status = ifelse(keep, "Filtered In", "Filtered Out")) %>%
+  count(source_db, filter_status) %>%
+  group_by(source_db) %>%
+  mutate(
+    percent = round(n / sum(n) * 100, 1),
+    label   = paste0(filter_status, " ", percent, "%")
+  ) %>%
+  ungroup()
+
+split_pie_data <- split(pie_data, pie_data$source_db)
+
+pie_plots <- map(split_pie_data, function(df) {
+  ggplot(df, aes(x = "", y = n, fill = filter_status)) +
+    geom_col(width = 1, color = "white") +
+    coord_polar(theta = "y") +
+    geom_text(aes(label = label), position = position_stack(vjust = 0.5), size = 4) +
+    scale_fill_manual(values = c("Filtered In" = "steelblue", "Filtered Out" = "grey70")) +
+    labs(title = paste("Filter Status for", unique(df$source_db))) +
+    theme_void()
+})
+
+wrap_plots(pie_plots)
+```
+
+```{r split-taxonomic-ranks, echo=TRUE}
+# Split taxonomic path into rank columns for both non-SO and SO subsets
+
+wgs_euks3_flagged_split <- wgs_euks3_flagged_large %>%
+  separate(
+    taxonomic_path,
+    into = paste0("rank", 1:7),
+    sep  = ";",
+    fill = "right"
+  ) %>%
+  mutate(across(starts_with("rank"), trimws)) %>%
+  filter(rank4 != "Primates" | is.na(rank4))   # remove Primates except one that will be added in with stuff later
+
+########### lets also look at split in non-target
+wgs_euks3_flagged_split %>%
+  distinct(assembly_accession, rank2, rank3) %>%
+  count(rank2, rank3) %>%
+  arrange(desc(n)) %>%
+  print(n = Inf)
+
+# Apply same split to SO genomes (use wgs_euks2 joined version)
+so_wgs_euks3_split <- so_wgs_euks2_slim_subset %>%
+  separate(
+    taxonomic_path,
+    into = paste0("rank", 1:7),
+    sep  = ";",
+    fill = "right"
+  ) %>%
+  mutate(across(starts_with("rank"), trimws))
+
+# Review what is the actual taxonomic breakdown of available 
+so_wgs_euks3_split %>%
+  distinct(assembly_accession, rank2, rank3) %>%
+  count(rank2, rank3) %>%
+  arrange(desc(n)) %>%
+  print(n = Inf)
+```
+
+```{r barplot-filtered-out-by-group, echo=TRUE}
+# Bar chart of filtered-out genomes by eukaryotic group and assembly level
+
+library(forcats)
+
+remove_data <- wgs_euks3_flagged_split %>%
+  filter(!keep) %>%
+  count(rank2, source_db, assembly_level, name = "n") %>%
+  mutate(rank2 = fct_reorder(rank2, n))
+
+ggplot(remove_data, aes(x = rank2, y = n, fill = assembly_level)) +
+  geom_col() +
+  facet_wrap(~ source_db, scales = "free_y") +
+  labs(
+    title = "Filtered Out Eukaryotic Groups by Source DB and Assembly Level",
+    x     = "Eukaryotic Group",
+    y     = "Number of Genomes",
+    fill  = "Assembly Level"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r split-keep-remove, echo=TRUE}
+# Split into kept and removed subsets for GENBANK and REFSEQ
+
+genbank_remove <- wgs_euks3_flagged_split %>% filter(source_db == "GENBANK", !keep)
+genbank_keep   <- wgs_euks3_flagged_split %>% filter(source_db == "GENBANK",  keep)
+refseq_remove  <- wgs_euks3_flagged_split %>% filter(source_db == "REFSEQ",  !keep)
+refseq_keep    <- wgs_euks3_flagged_split %>% filter(source_db == "REFSEQ",   keep)
+
+all_remove <- wgs_euks3_flagged_split %>%
+  filter(source_db %in% c("GENBANK", "REFSEQ"), !keep)
+all_keep   <- wgs_euks3_flagged_split %>%
+  filter(source_db %in% c("GENBANK", "REFSEQ"),  keep)
+
+# Merge kept non-SO genomes with all SO genomes
+all_keep_final <- bind_rows(all_keep, so_wgs_euks3_split)
+```
+
+```{r save-outputs, echo=TRUE}
+# Save kept, removed and SO genome tables
+
+write.csv(all_remove,        file = "removed_genomes_nocontig.csv")
+write.csv(all_keep,          file = "kept_genomes_nocontig.csv")
+write.csv(so_wgs_euks3_split, file = "so_kept_genomes.csv")
+```
+
+```{r review-all-keep, echo=TRUE}
+# Review unique taxa and assembly representation in all_keep_final
+
+skinny_all_keep <- all_keep_final %>%
+  distinct(assembly_accession, tax_id)
+
+test_skinny_all_keep <- all_keep_final %>%
+  distinct(tax_id)
+cat("Unique tax_ids in all_keep_final:", nrow(test_skinny_all_keep), "\n")
+
+test_taxid_assembly_all_keep <- all_keep_final %>%
+  distinct(tax_id, assembly_level)
+
+test_organelle_assembly_all_keep <- all_keep_final %>%
+  distinct(tax_id, organelle_description)
+```
+
+```{r merge-and-export-accessions, echo=TRUE}
+# Combine SO and non-SO kept genomes and export assembly accession lists
+
+library(readr)
+
+merged_tbl <- bind_rows(all_keep, so_wgs_euks2_slim_subset)
+
+assembly_ids <- merged_tbl %>%
+  distinct(assembly_accession) %>%
+  arrange(assembly_accession)
+```
+```{save-outputs, echo = TRUE}
+write_csv(assembly_ids, "assembly_accessions_nocontig_SLIM.csv")
+write_lines(assembly_ids$assembly_accession, "assembly_accessions_SLIM_nocontig.txt")
+```
+
+```{r assign-taxonomic-groups, echo=TRUE}
+# Assign broad taxonomic groups to each assembly for downstream analysis
+
+assign_db_group <- function(rank2, rank3) {
+  case_when(
+    rank2 == "Chordata" & rank3 %in% c("Actinopteri", "Chondrichthyes",
+                                        "Cladistia", "Hyperoartia", "Myxini") ~ "Fish",
+    rank2 == "Chordata" & rank3 == "Mammalia"                                 ~ "Mammalia",
+    rank2 == "Chordata" & rank3 == "Aves"                                     ~ "Birds",
+    rank2 == "Chordata" & rank3 == "Lepidosauria"                             ~ "Reptiles",
+    rank2 == "Chordata" & rank3 == "Amphibia"                                 ~ "Amphibians",
+    rank2 %in% c("Chordata", "Hemichordata")                                  ~ "Chordates_Outgroup",
+    grepl("Arthropoda|Mollusca|Echinodermata|Nematoda|Platyhelminthes|Annelida|Porifera|Cnidaria",
+          rank2, ignore.case = TRUE)                                           ~ "Invertebrates",
+    grepl("Ascomycota|Basidiomycota|Mucoromycota|Chytridiomycota|Microsporidia",
+          rank2, ignore.case = TRUE)                                           ~ "Fungi_Protists",
+    TRUE                                                                       ~ "Plants_Algae_Other"
+  )
+}
+
+accessions_with_groups <- merged_tbl %>%
+  mutate(db_group = assign_db_group(rank2, rank3)) %>%
+  distinct(tax_id, db_group, rank2, rank3, rank4, rank5, rank6) %>%
+  arrange(db_group, tax_id)
+
+accessions_with_groups %>%
+  count(db_group, name = "n_accessions") %>%
+  arrange(desc(n_accessions)) %>%
+  print(n = Inf)
+
+write_csv(accessions_with_groups, "assembly_accessions_with_groups_extra_taxonomic.csv")
+message("Done. Taxonomic group accession table written.")
+```
+
+```{r scatter-chordata-SO, echo=TRUE}
+# Contigs vs Scaffold N50 highlighting Southern Ocean Chordata genomes
+
+merged_tbl %>%
+  filter(rank2 == "Chordata") %>%
+  ggplot(aes(x = contigs, y = scaffold_n50, shape = is_SO)) +
+    geom_point(alpha = 0.7) +
+    facet_wrap(~ source_db) +
+    labs(
+      title = "Chordata Genomes — SO taxa highlighted",
+      x     = "Number of Contigs",
+      y     = "Scaffold N50",
+      shape = "SO Genome"
+    ) +
+    scale_shape_manual(values = c("FALSE" = 16, "TRUE" = 17)) +
+    scale_x_continuous(labels = scales::label_comma()) +
+    theme_minimal() +
+    gghighlight(is_SO == TRUE, use_direct_label = FALSE)
+```
+
+```{r scatter-streptophyta-SO, echo=TRUE}
+# Contigs vs Scaffold N50 for Streptophyta (plants) highlighting SO taxa
+
+genbank_keep %>%
+  filter(rank2 == "Streptophyta") %>%
+  ggplot(aes(x = contigs, y = scaffold_n50, shape = is_SO)) +
+    geom_point(alpha = 0.7) +
+    facet_wrap(~ source_db) +
+    labs(
+      title = "Streptophyta (Plant) Genomes — SO taxa highlighted",
+      x     = "Number of Contigs",
+      y     = "Scaffold N50",
+      shape = "SO Genome"
+    ) +
+    scale_shape_manual(values = c("FALSE" = 16, "TRUE" = 17)) +
+    scale_x_continuous(labels = scales::label_comma()) +
+    theme_minimal() +
+    gghighlight(is_SO == TRUE, use_direct_label = FALSE)
+```
+
+```{r donut-taxonomy, echo=TRUE}
+# Donut charts showing taxonomic composition of merged_tbl at multiple ranks
+
+library(scales)
+library(forcats)
+
+prep_pie_data <- function(df, col, na_label = "Unknown", label_min_pct = 2) {
+  col <- rlang::enquo(col)
+  df %>%
+    transmute(level = fct_na_value_to_level(factor(!!col), level = na_label)) %>%
+    count(level, name = "n") %>%
+    arrange(desc(n)) %>%
+    mutate(
+      pct   = n / sum(n),
+      level = fct_reorder(level, n),
+      label = paste0(level, " — ", n),
+      label = ifelse(pct * 100 >= label_min_pct, label, "")
+    )
+}
+
+plot_donut <- function(pie_df, title) {
+  ggplot(pie_df, aes(x = 2, y = n, fill = level)) +
+    geom_col(width = 1, color = "white") +
+    coord_polar(theta = "y") +
+    geom_text(
+      aes(x = 2.05, label = label),
+      position = position_stack(vjust = 0.5),
+      size = 3
+    ) +
+    xlim(0.5, 2.6) +
+    labs(title = title) +
+    theme_void() +
+    theme(legend.position = "none", plot.title = element_text(hjust = 0.5))
+}
+
+rank2_pie_df <- prep_pie_data(merged_tbl, rank2, label_min_pct = 2)
+
+strep_rank4_pie_df <- merged_tbl %>%
+  filter(rank2 == "Streptophyta") %>%
+  prep_pie_data(rank4, label_min_pct = 4)
+
+arthro_rank4_pie_df <- merged_tbl %>%
+  filter(rank2 == "Arthropoda") %>%
+  prep_pie_data(rank4, label_min_pct = 4)
+
+strep_rank6_pie_df <- merged_tbl %>%
+  filter(rank2 == "Streptophyta") %>%
+  prep_pie_data(rank6, label_min_pct = 4)
+
+donut_rank2       <- plot_donut(rank2_pie_df,       "All taxa — Phylum (rank2)")
+donut_strep_rank4 <- plot_donut(strep_rank4_pie_df, "Streptophyta — Orders")
+donut_arthro_rank4 <- plot_donut(arthro_rank4_pie_df, "Arthropoda — Orders")
+donut_strep_rank6 <- plot_donut(strep_rank6_pie_df, "Streptophyta — Genus (rank6)")
+
+donut_rank2 | donut_arthro_rank4 | donut_strep_rank4 
+```
+
+
+
+```{r so-target-groups, echo=TRUE}
+# Assign target groups to so_wgs_euks3_split based on rank2 and rank3
+
+so_wgs_euks3_split <- so_wgs_euks3_split %>%
+  mutate(
+    target_group = case_when(
+      rank2 == "Chordata" & rank3 == "Actinopteri"    ~ "Fish",
+      rank2 == "Chordata" & rank3 == "Chondrichthyes" ~ "Fish",
+      rank2 == "Chordata" & rank3 == "Hyperoartia"    ~ "Fish",
+      rank2 == "Chordata" & rank3 == "Mammalia"       ~ "Mammalia",
+      rank2 == "Chordata" & rank3 == "Aves"           ~ "Birds",
+      rank2 == "Chordata" & rank3 %in% c("Ascidiacea",
+                                          "Thaliacea") ~ "Tunicata",
+      rank2 == "Mollusca"                              ~ "Mollusca",
+       rank2 == "Mollusca"                              ~ "Mollusca",
+      rank2 == "Arthropoda" & rank3 %in% c("Malacostraca",
+                                           	"Ostracoda", 
+                                           "Hexactinellida")~ "Crustaceans",
+      rank2 == "Arthropoda" & rank3 =="Pycnogonida"  ~ "SeaSpiders",
+      rank2 == "Echinodermata"                         ~ "Echinodermata",
+      rank2 == "Porifera"                              ~ "Porifera",
+      rank2 == "Annelida"                              ~ "Annelida",
+      rank2 == "Cnidaria"                              ~ "Cnidaria",
+      rank2 == "Bryozoa"                               ~ "Bryozoa",
+      rank2 == "Ctenophora"                            ~ "Ctenophora",
+      rank2 == "Nematoda"                              ~ "Nematoda",
+      TRUE                                             ~ "Other"
+    )
+  )
+
+cat("SO target group breakdown:\n")
+print(table(so_wgs_euks3_split$target_group, useNA = "always"))
+
+################ non - southern ocean 
+wgs_euks3_flagged_split <- wgs_euks3_flagged_split %>%
+  mutate(
+    target_group = case_when(
+      rank2 == "Chordata" & rank3 == "Actinopteri"    ~ "Fish",
+      rank2 == "Chordata" & rank3 == "Chondrichthyes" ~ "Fish",
+      rank2 == "Chordata" & rank3 == "Hyperoartia"    ~ "Fish",
+      rank2 == "Chordata" & rank3 == "Mammalia"       ~ "Mammalia",
+      rank2 == "Chordata" & rank3 == "Aves"           ~ "Birds",
+      rank2 == "Chordata" & rank3 %in% c("Ascidiacea",
+                                          "Thaliacea") ~ "Tunicata",
+      rank2 == "Mollusca"                              ~ "Mollusca",
+      rank2 == "Arthropoda" & rank3 %in% c("Malacostraca",
+                                           	"Ostracoda", 
+                                           "Hexactinellida")~ "Crustaceans",
+      rank2 == "Arthropoda" & rank3 =="Pycnogonida"  ~ "SeaSpiders",
+      rank2 == "Echinodermata"                         ~ "Echinodermata",
+      rank2 == "Porifera"                              ~ "Porifera",
+      rank2 == "Annelida"                              ~ "Annelida",
+      rank2 == "Cnidaria"                              ~ "Cnidaria",
+      rank2 == "Bryozoa"                               ~ "Bryozoa",
+      rank2 == "Ctenophora"                            ~ "Ctenophora",
+      rank2 == "Nematoda"                              ~ "Nematoda",
+      TRUE                                             ~ "Other"
+    )
+  )
+
+cat("Non-SO target group breakdown:\n")
+print(table(wgs_euks3_flagged_split$target_group, useNA = "always"))
+
+
+
+
+```
+
+```{r so-target-groups-barplot, echo=TRUE}
+# Bar chart — unique assemblies per target group coloured by assembly level
+
+so_wgs_euks3_split %>%
+  distinct(assembly_accession, target_group, assembly_level, source_db) %>%
+  count(target_group, assembly_level, source_db) %>%
+  mutate(target_group = fct_reorder(target_group, n, sum)) %>%
+  ggplot(aes(x = target_group, y = n, fill = assembly_level)) +
+    geom_col() +
+    facet_wrap(~ source_db, scales = "free_y") +
+    labs(
+      title = "Southern Ocean Genomes by Target Group",
+      x     = "Target Group",
+      y     = "Number of Assemblies",
+      fill  = "Assembly Level"
+    ) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r so-target-groups-donut, echo=TRUE}
+# Donut chart — proportional composition of SO target groups
+
+so_donut_data <- so_wgs_euks3_split %>%
+  distinct(tax_id, target_group) %>%
+  count(target_group, name = "n") %>%
+  arrange(desc(n)) %>%
+  mutate(
+    pct          = n / sum(n),
+    target_group = fct_reorder(target_group, n),
+    label        = ifelse(
+      pct * 100 >= 2,
+      paste0(target_group, " ", " (",n , " - ", scales::percent(pct, accuracy = 0.1), ")"),
+      ""
+    )
+  )
+
+ggplot(so_donut_data, aes(x = 2, y = n, fill = target_group)) +
+  geom_col(width = 1, color = "white") +
+  coord_polar(theta = "y") +
+  geom_text(
+    aes(x = 2.7, label = label),
+    position = position_stack(vjust = 0.3),
+    size = 3
+  ) +
+  xlim(0.5, 3.2) +
+  labs(title = "Southern Ocean Genomes — Target Group Composition") +
+  theme_void() +
+  theme(legend.position = "none", plot.title = element_text(hjust = 0.5))
+```

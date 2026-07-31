@@ -25,7 +25,7 @@ library(stringr)
 wgs_euks <- read_delim("/Users/davisee/OneDrive - University of Tasmania/Documents/chapter2/raw data/eukaryote_master_database.tsv",
                        delim = "\t", escape_double = FALSE, trim_ws = TRUE)
 
-so_RAMS_list <- read_delim("/Users/davisee/OneDrive - University of Tasmania/Documents/chapter2/raw data/RAMS_taxlist_20251129/RAMS_to_NCBI_taxa_with_lineage_ids.txt", 
+so_RAMS_list <- read_delim("C:/Users/davisee/OneDrive - University of Tasmania/Documents/chapter2/raw data/RAMS_alleukaryote_taxlist_20260224/WoRMS_RAMS_2026-02-01/RAMS_SO_whitelist_complete.tsv", 
                            delim = "\t", escape_double = FALSE, trim_ws = TRUE)
 clean_SO_RAMS_list <- so_RAMS_list %>%
   filter(!is.na(tax_id))
@@ -49,6 +49,12 @@ colnames(wgs_euks) <- c(
 wgs_euks$is_SO <- wgs_euks$tax_id %in% so_genomes$tax_id
 # check how many are iridian genomes
 table(wgs_euks$is_SO)
+so_taxa <- wgs_euks %>% filter(is_SO == TRUE) %>% pull(tax_id) %>% n_distinct()
+print(so_taxa)
+noso_taxa <- wgs_euks %>% filter(is_SO == FALSE) %>% pull(tax_id) %>% n_distinct()
+print(noso_taxa)
+so_taxa / (so_taxa + noso_taxa)
+
 ```
 
 
@@ -121,7 +127,16 @@ ggplot(aes(x = source_db, fill = assembly_level)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 ```
+```{r apply-levels-assembly_level, echo = TRUE}
+#to make DB filtering easier after understanding what types of assemblies are here, we are going to do some ranking.
+unique(wgs_euks2$assembly_level)
+#quality of assemblies goes "Chromosome", "complete Genome", "Contig", "Scaffold", so if we create these levels, we can understand white are the best assemblies either per accession, per species(tax_id) or both. This should signifcantly decrease database size. 
 
+wgs_euks2$assembly_level <- factor(wgs_euks2$assembly_level, levels = c("Chromosome", "Complete Genome", "Contig", "Scaffold"))
+
+levels(wgs_euks2$assembly_level)
+
+```
 ```{r barplot-organelle-proportional, echo=TRUE}
 #lets also explore what the scope of organelles is as well
 # is there a skew of certain organelles at certain assembly levels? 
@@ -165,23 +180,91 @@ ggplot(aes(x = source_db, fill = organelle_description)) +
 ## in these cases, NA usually refers to nuclear data 
 ```{r joining-tables, echo=TRUE}
 #Let's review rarer organelle types to see if they would be good to keep in or not
+unique(wgs_euks2$organelle_description)
 #if I do filter, and it will be good to, would need to filter it by organelle_sequence_length, not ungapped_sequence_legnth & gapped_sequence_length
 apico <- wgs_euks2 %>% filter(organelle_description=="Apicoplast") #apicoplasts might be good to keep bc pathogenitic groups, with cutoff 25,000 bp for organelle length
+chloro <- wgs_euks2 %>% filter(organelle_description=="Chloroplast")
 plast <- wgs_euks2 %>% filter(organelle_description=="Plastid") # also use 100,000 bp cutoff 
 what <- wgs_euks2 %>% filter(organelle_description=="Mitochondrial Plasmid") #agricultural plasmid samples, REMOVE
 misc <- wgs_euks2 %>% filter(organelle_description=="Mitochondrial Miscellaneous") # just four castor oil plant samples, REMOVE
-#remove the 
+mito <- wgs_euks2 %>% filter(organelle_description=="Mitochondrion")
+chromo <- wgs_euks2 %>% filter(organelle_description == "Chromosome" | is.na(organelle_description))
+# #remove the miscelleanous and mitochondrial plasmid after checking 
 wgs_euks2 <- wgs_euks2 %>% 
   filter(!organelle_description %in% c("Mitochondrial Plasmid",
-                                       "Mitochondrial Miscellaneous"))
-```
+                                      "Mitochondrial Miscellaneous"))
 
+#check to make sure misc filter worked properly, they should no longer be on the list! 
+unique(wgs_euks2$organelle_description)
+```
+```{r filtering-organelle-dbs, echo = TRUE}
+#check that each of the organelle vectors have the assembly_accsion levels that we applied earlier!
+#per organelle, going to do the following steps
+#(1)check that levels continued over for assembly_accession
+#arrange by tax_id and then assembly acession, so for each taxa_id, assembly_acession goes first 
+#run (distinct(tax_id, .keep_all=TRUE))
+
+## ----------------- Apicoplast ----------------------- ##
+levels(apico$assembly_level)
+
+apico_slim <- apico %>%
+  group_by(tax_id) %>%
+  arrange(assembly_level, desc(genome_coverage)) %>%
+  distinct(tax_id, .keep_all = TRUE)
+View(head(apico_slim, n = 5))
+
+## ----------------- Chloroplast ---------------------- ##
+levels(chloro$assembly_level)
+
+chloro_slim <- chloro %>%
+  group_by(tax_id) %>%
+  arrange(assembly_level) %>%
+  distinct(tax_id, .keep_all = TRUE)
+View(head(chloro_slim, n = 5))
+
+## ------------------ Plastid ------------------------- ##
+levels(plast$assembly_level)
+
+plast_slim <- plast %>%
+  group_by(tax_id) %>%
+  arrange(assembly_level) %>%
+  distinct(tax_id, .keep_all = TRUE)
+View(head(plast_slim, n = 5))
+
+## ---------------- Mitochondrion --------------------- ##
+levels(mito$assembly_level)
+
+mito_slim <- mito %>%
+  group_by(tax_id) %>%
+  arrange(assembly_level) %>%
+  distinct(tax_id, .keep_all = TRUE)
+View(head(mito_slim, n = 5))
+
+## --------------- Chromosomes + NA (assumed nuclear) ------------ ##
+levels(chromo$assembly_level)
+
+chromo_slim <- chromo %>%
+  group_by(tax_id) %>%
+  arrange(assembly_level) %>%
+  distinct(tax_id, .keep_all = TRUE)
+View(head(chromo_slim, n = 5))
+
+
+```
+```{r merge-back-db, echo=TRUE}
+#merge all of the slim (filtered) db's back togethern to make to slim_wgs_euks2
+############ --- merge all of them back together!!! ---- ########
+wgs_euks2_slim <- bind_rows(chromo_slim, mito_slim, chloro_slim, plast_slim, apico_slim)
+
+#check if the merge worked correctly 
+wgs_euks2_slim %>% count(organelle_description)
+```
 
 ```{r violin-plot, echo = TRUE}
 ## Review and filter out lower quality organelle assemblies ---> will then only catch complete organelles 
 #Mitochondria Filter (most important for RAMS) organelle_length >= 10,000 bp 
 ##1 Check any that don't meet filter to see if they are Southern Ocean species
-wgs_euks2 %>%
+wgs_euks2_slim %>%
   filter(is_SO==TRUE) %>%
 ggplot(aes(x = organelle_description, y = organelle_sequence_length, fill = assembly_level)) +
     geom_violin(alpha = 0.5, na.rm = TRUE) +
@@ -195,7 +278,7 @@ ggplot(aes(x = organelle_description, y = organelle_sequence_length, fill = asse
         fill = ""
     ) +
     theme_minimal() +
-    theme(legend.position = "none")
+    theme(legend.position = "bottom")
 
 ### some oikopleura samples that are actually really important to keep in. so going to lower the cutoff t0 9000bp
 ```
@@ -203,72 +286,30 @@ ggplot(aes(x = organelle_description, y = organelle_sequence_length, fill = asse
 
 ```{r summary - SO scaffold genome exploration, echo=TRUE}
 #isolate all all SO genomes at scaffold level to see what type of taxa they are
-so_wgs_euks2_subset <- wgs_euks2 %>%
+so_wgs_euks2_slim_subset <- wgs_euks2 %>% ##### MAKING A BIG CHANGE HERE
   filter(is_SO==TRUE)
 # it is a lot of important species, I think it would be good to keep them all in.
 
-# length(unique(so_wgs_euks2_subset$tax_id)) ## 143/ 558 SO taxa represented
-# str_count(unique(so_wgs_euks2_subset$tax_id)) ## each taxa represented by more than one genome 
+# length(unique(so_wgs_euks2_slim_subset$tax_id)) ## 143/ 558 SO taxa represented
+# str_count(unique(so_wgs_euks2_slim_subset$tax_id)) ## each taxa represented by more than one genome 
 
-noso_wgs_euks2 <- wgs_euks2 %>%
+noso_wgs_euks2_slim <- wgs_euks2_slim %>%
   filter(is_SO==FALSE)
 
 #Overall, would be good to keep in. 
-# So, to make processing more distinct, let's split data going forward into two, the so_wgs_euks2_subset, and then the filted_ccg_noSO_wgs_euks2 ----> wgs_euks3! 
+# So, to make processing more distinct, let's split data going forward into two, the so_wgs_euks2_slim_subset, and then the filted_ccg_noSO_wgs_euks2_slim ----> wgs_euks3! 
 ```
 
 ``` {r joining-tables, echo = TRUE}
-#filtering mitochondrial with 9000 bp cutoff 
-# noso_wgs_euks2_no_small_mito <- noso_wgs_euks2 %>%
-# filter(
-#     # Keep all rows that are NOT (mitochondrion AND length < 10000)
-#     !(organelle_description == "Mitochondrion" &
-#         !is.na(organelle_sequence_length) &
-#         organelle_sequence_length < 10000)
-#   )
-# 
-# #Chloroplast and Plastid Filter (for larger environmental catch) organelle_length >= 100,000 bp
-# noso_wgs_euks2_mito_chloro_filtered <- noso_wgs_euks2_no_small_mito %>%
-#   filter(
-#     !(organelle_description %in% c("Plastid", "Chloroplast") &
-#         !is.na(organelle_sequence_length) &
-#         organelle_sequence_length < 100000)
-#   )
-# 
-# 
-# #Apicoplast Filter (for certain pathogenetic groups?) organelle_length >= 25,000 bp? or 30,000 bp? 
-# noso_wgs_euks2_michap_filtered <- noso_wgs_euks2_mito_chloro_filtered %>%
-# filter(
-#     # Keep all rows that are NOT (mitochondrion AND length < 10000)
-#     !(organelle_description=="Apicoplast" &
-#         !is.na(organelle_sequence_length) &
-#         organelle_sequence_length < 30000)
-#   )
-
+#filtering organelles#
 
 # # 1) Mitochondrion: drop if length < 10,000 OR length is NA, but only for mito rows
-# noso_wgs_euks2_no_small_mito <- noso_wgs_euks2 %>%
-#   filter(
-#     !(organelle_description == "Mitochondrion" &
-#       (is.na(organelle_sequence_length) | organelle_sequence_length < 10000))
-#   )
-# 
 # # 2) Chloroplast/Plastid: drop if length < 100,000 OR length is NA, only for those rows
-# noso_wgs_euks2_mito_chloro_filtered <- noso_wgs_euks2_no_small_mito %>%
-#   filter(
-#     !(organelle_description %in% c("Plastid", "Chloroplast") &
-#       (is.na(organelle_sequence_length) | organelle_sequence_length < 100000))
-#   )
-# 
 # # 3) Apicoplast: drop if length < 30,000 OR length is NA, only for those rows
-# noso_wgs_euks2_michap_filtered <- noso_wgs_euks2_mito_chloro_filtered %>%
-#   filter(
-#     !(organelle_description == "Apicoplast" &
-#       (is.na(organelle_sequence_length) | organelle_sequence_length < 30000))
-#  )
 
 
-noso_wgs_euks2_filtered <- noso_wgs_euks2 %>%
+
+noso_wgs_euks2_slim_filtered <- noso_wgs_euks2_slim %>%
   mutate(
     keep = case_when(
       # Mitochondrion: require length >= 10,000 and not NA
@@ -293,16 +334,16 @@ noso_wgs_euks2_filtered <- noso_wgs_euks2 %>%
 
 ```{r barplot-stacked, echo = TRUE}
 ## create new data with just assembly levels are most trustworthy after filtering by organelle length
-# wgs_euks3 <- noso_wgs_euks2_michap_filtered %>%
+# wgs_euks3 <- noso_wgs_euks2_slim_michap_filtered %>%
 #   filter(assembly_level %in% c("Chromosome", "Complete Genome"))
 
 # Define your level tiers
 high_ok   <- c("Chromosome", "Complete Genome")
-#low_block <- c("Scaffold", "Contig")
-low_block <- c("Scaffold")
+low_block <- c("Scaffold", "Contig")
+#low_block <- c("Scaffold")
 
 # 1) Collapse to *assembly-level decision*
-by_asm <- noso_wgs_euks2_filtered %>%
+by_asm <- noso_wgs_euks2_slim_filtered %>%
   filter(!is.na(assembly_accession), assembly_accession != "") %>%
   group_by(assembly_accession) %>%
   summarise(
@@ -317,7 +358,7 @@ asm_keep <- by_asm %>%
   pull(assembly_accession)
 
 # 3) From the original table, retain rows for those assemblies (if you still need rows)
-wgs_euks3 <- noso_wgs_euks2_filtered %>%
+wgs_euks3 <- noso_wgs_euks2_slim_filtered %>%
   filter(assembly_accession %in% asm_keep)
 
 # 4) Immediately pick one representative row per assembly for downstream work
@@ -378,7 +419,7 @@ ggplot(wgs_euks3, aes(x = assembly_level, y = len_ratio, fill = assembly_level))
 
 ```{r scatter-n50-l50, echo=TRUE}
 # Scatter plot: Scaffold N50 vs Scaffold L50, faceted by source
-ggplot(so_wgs_euks2_subset, aes(x = scaffold_n50, y = scaffold_l50)) +
+ggplot(so_wgs_euks2_slim_subset, aes(x = scaffold_n50, y = scaffold_l50)) +
   geom_point(aes(size = contigs), alpha = 0.7) +
   facet_wrap(~ source_db) +
   labs(title = "RAMS taxa: All genomes no filtered", x = "Scaffold N50", y = "Scaffold L50") +
@@ -396,7 +437,7 @@ ggplot(wgs_euks3, aes(x = scaffold_n50, y = scaffold_l50)) +
 
 ```{r scatter-n50-contigs-gc, echo=TRUE}
 # Scatter plot: Scaffold N50 vs Contigs, filled by GC content
-ggplot(so_wgs_euks2_subset, aes(x = scaffold_n50, y = contigs)) +
+ggplot(so_wgs_euks2_slim_subset, aes(x = scaffold_n50, y = contigs)) +
   geom_point(aes(size = contigs, fill = gc_percent), shape = 21, color = "black", alpha = 0.8) +
   facet_wrap(~ source_db) +
   labs(title = "RAMS taxa: All genomes no filtered", x = "Scaffold N50", y = "Number of contigs", fill = "GC Percent") +
@@ -496,7 +537,7 @@ ggplot(wgs_euks3, aes(x = as.numeric(gc_percent), fill = assembly_level)) +
   facet_wrap(~ source_db) +
   labs(title = "REfSeq and Genbank Chromosome + Complete Genomes, Organelle Filtered", x = "GC Percent", y = "Density", fill = "Assembly Level") +
   theme_minimal()
-ggplot(so_wgs_euks2_subset, aes(x = as.numeric(gc_percent), fill = assembly_level)) +
+ggplot(so_wgs_euks2_slim_subset, aes(x = as.numeric(gc_percent), fill = assembly_level)) +
   geom_density(alpha = 0.6) +
   facet_wrap(~ source_db) +
   labs(title = "RAMS taxa: All genomes no filtered", x = "GC Percent", y = "Density", fill = "Assembly Level") +
@@ -511,7 +552,7 @@ ggplot(wgs_euks3, aes(x = ungapped_length, y = sequence_length)) +
   facet_wrap(~ source_db) +
   labs(title = "REfSeq and Genbank Chromosome + Complete Genomes, Organelle Filtered", x = "Ungapped Sequence Length", y = "Total Sequence Length") +
   theme_minimal()
-ggplot(so_wgs_euks2_subset, aes(x = ungapped_length, y = sequence_length)) +
+ggplot(so_wgs_euks2_slim_subset, aes(x = ungapped_length, y = sequence_length)) +
   geom_point(alpha = 0.8, aes(color = assembly_level)) +
   geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "lightgrey") +
   facet_wrap(~ source_db) +
@@ -537,6 +578,12 @@ wgs_euks3 <- wgs_euks3 %>%
 summary(wgs_euks3$len_ratio)
 wgs_euks3_assemblies <- wgs_euks3_assemblies %>%
   mutate(len_ratio = (sequence_length / ungapped_length))
+
+
+#add length ratio to southern ocean ones
+so_wgs_euks2_slim_subset <- so_wgs_euks2_slim_subset %>%
+  mutate(len_ratio = (sequence_length / ungapped_length))
+
 
 summary(wgs_euks3_assemblies$len_ratio)
 len_ratio <- 1.1 
@@ -577,107 +624,61 @@ ggplot(wgs_euks3_assemblies, aes(x = ungapped_length, y = sequence_length)) +
 ```
 
 ### plots the points filtered by the len_ratio threshold and that are register Antarctic Marine species (RAMS list - Chordata) 
-```{r plot-len_ratio-filter-iridian, echo=TRUE}
-ggplot(wgs_euks2, aes(x = ungapped_length, y = sequence_length)) +
-  geom_point(alpha = 0.8, aes(color = assembly_level)) +
-  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "lightgrey") +
-  facet_wrap(~ source_db, drop = FALSE) +
-  gghighlight(is_SO == TRUE, use_direct_label = FALSE) +
-  labs(
-    title = "Ungapped vs Total Sequence Length (Highlighting Iridian Genomes)",
-    x = "Ungapped Sequence Length",
-    y = "Total Sequence Length"
-  ) +
-  theme_minimal()
-# --------> the orignal code crashed locally, so we included this work around to reduce ----> NOTE 2026: if only looking at the lower quality RAMS, much smaller will be fine
-# --------> background memory of non-SO genomes. 
-# Keep only columns you plot (reduces memory pressure)
-# cols_needed <- c("ungapped_length", "sequence_length", "assembly_level", "source_db", "is_SO")
-# wgs_min <- dplyr::select(wgs_euks2, dplyr::all_of(cols_needed))
-# 
-# # Split into background (non-SO) and highlights (SO)
-# so_df <- wgs_min %>%
-#   filter(is_SO) %>%
-#   select(ungapped_length, sequence_length, assembly_level, source_db)
-
-# Sample background per facet to avoid 10s of millions of points on the device
-# Tune 'n_per_facet' based on your machine; if it still feels heavy, try 300k–500k
-# n_per_facet <- 800000
-# 
-# bg_df <- wgs_min %>%
-#   filter(!is_SO) %>%
-#   select(ungapped_length, sequence_length, source_db) %>%
-#   group_by(source_db) %>%
-#   mutate(.rand = runif(dplyr::n())) %>%              # per-group random order
-#   slice_min(.rand, n = n_per_facet, with_ties = FALSE) %>%
-#   ungroup() %>%
-#   select(-.rand)
-# 
-# ggplot() +
-#   # background in light gray, not mapped to color
-#   geom_point(
-#     data = bg_df,
-#     mapping = aes(x = ungapped_length, y = sequence_length),
-#     color = "grey80", alpha = 0.25, size = 0.2
-#   ) +
-#   # foreground: only SO, colored by assembly_level
-#   geom_point(
-#     data = so_df,
-#     mapping = aes(x = ungapped_length, y = sequence_length, color = assembly_level),
-#     alpha = 0.9, size = 0.6
-#   ) +
+# ```{r plot-len_ratio-filter-iridian, echo=TRUE}
+# ggplot(wgs_euks2_slim, aes(x = ungapped_length, y = sequence_length)) +
+#   geom_point(alpha = 0.8, aes(color = assembly_level)) +
 #   geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "lightgrey") +
 #   facet_wrap(~ source_db, drop = FALSE) +
+#   gghighlight(is_SO == TRUE, use_direct_label = FALSE) +
 #   labs(
-#     title = "Ungapped vs Total Sequence Length (Highlighting Southern Ocean MArine Species Genomes)",
+#     title = "Ungapped vs Total Sequence Length (Highlighting Iridian Genomes)",
 #     x = "Ungapped Sequence Length",
 #     y = "Total Sequence Length"
 #   ) +
-#   theme_minimal() +
-#   guides(color = guide_legend(override.aes = list(size = 2)))  # nicer legend
+#   theme_minimal()
 
-```
+<!-- ``` -->
 
 
 ### We found quite a bit of NAs in the scaffold_n50, lets see which assembly level they are
 ### This will be good to check for both DB, will it still be too large? 
 
-#write.csv(wgs_euks2, file ="wgs_euks2.csv")
+#write.csv(wgs_euks2_slim, file ="wgs_euks2_slim.csv")
 
 ```{r counting-nas, echo=TRUE}
-# Count NA values per column and source_db
-na_counts <- wgs_euks3 %>%
-  select(source_db, scaffold_n50, contigs) %>%
-  pivot_longer(cols = c(scaffold_n50, contigs), names_to = "variable", values_to = "value") %>%
-  mutate(is_na = is.na(value)) %>%
-  group_by(source_db, variable) %>%
-  summarise(n = sum(is_na), .groups = "drop") %>%
-  complete(source_db, variable, fill = list(n = 0))
-
-# Plot grouped by source_db, faceted by column
-ggplot(na_counts, aes(x = source_db, y = n, fill = source_db)) +
-  geom_col(show.legend = FALSE) +
-  facet_wrap(~ variable, scales = "free_y") +
-  labs(title = "Number of NAs by Column and Source DB",
-       x = "Source DB",
-       y = "Number of NAs") +
-  theme_minimal()
-
-
-# Count NAs in scaffold_n50 and show their assembly_levels
-na_pie_data <- wgs_euks3   %>%
-  filter(is.na(scaffold_n50)) %>%
-  count(assembly_level) %>%
-  mutate(percentage = n / sum(n),
-         label = paste0(assembly_level, " (", round(percentage * 100, 1), "%)"))
-
-ggplot(na_pie_data, aes(x = "", y = n, fill = assembly_level)) +
-  geom_col(width = 1, color = "white") +
-  coord_polar(theta = "y") +
-  geom_text(aes(label = label), position = position_stack(vjust = 0.5), size = 4) +
-  labs(title = "Distribution of NAs in scaffold_n50 by Assembly Level",
-       x = NULL, y = NULL, fill = "Assembly Level") +
-  theme_void()
+# # Count NA values per column and source_db
+# na_counts <- wgs_euks3 %>%
+#   select(source_db, scaffold_n50, contigs) %>%
+#   pivot_longer(cols = c(scaffold_n50, contigs), names_to = "variable", values_to = "value") %>%
+#   mutate(is_na = is.na(value)) %>%
+#   group_by(source_db, variable) %>%
+#   summarise(n = sum(is_na), .groups = "drop") %>%
+#   complete(source_db, variable, fill = list(n = 0))
+# 
+# # Plot grouped by source_db, faceted by column
+# ggplot(na_counts, aes(x = source_db, y = n, fill = source_db)) +
+#   geom_col(show.legend = FALSE) +
+#   facet_wrap(~ variable, scales = "free_y") +
+#   labs(title = "Number of NAs by Column and Source DB",
+#        x = "Source DB",
+#        y = "Number of NAs") +
+#   theme_minimal()
+# 
+# 
+# # Count NAs in scaffold_n50 and show their assembly_levels
+# na_pie_data <- wgs_euks3   %>%
+#   filter(is.na(scaffold_n50)) %>%
+#   count(assembly_level) %>%
+#   mutate(percentage = n / sum(n),
+#          label = paste0(assembly_level, " (", round(percentage * 100, 1), "%)"))
+# 
+# ggplot(na_pie_data, aes(x = "", y = n, fill = assembly_level)) +
+#   geom_col(width = 1, color = "white") +
+#   coord_polar(theta = "y") +
+#   geom_text(aes(label = label), position = position_stack(vjust = 0.5), size = 4) +
+#   labs(title = "Distribution of NAs in scaffold_n50 by Assembly Level",
+#        x = NULL, y = NULL, fill = "Assembly Level") +
+#   theme_void()
 ```
 
 Doing a manual check on these the genomes looks ok, one option could be to filter these based on the coverage they have. We observe a suspisious decline in the lower end of the coverage. This high value is caused by the extreme high values and hence skewness in the data. We therefore selected a hard thresholds of 10. For setting the contigs we use the .01 / .99 percentile of RefSeq stats to filter the Genbank genomes. as well as the length_ratio
@@ -696,7 +697,7 @@ For So_genomes, need to probably do in depth based R markdown on included scaffo
 # Setting thresholds
 scaf_thres <- quantile(wgs_euks$scaffold_n50[wgs_euks$source_db == "REFSEQ"], 0.01, na.rm = TRUE)
 con_thres <- quantile(wgs_euks$contigs[wgs_euks$source_db == "REFSEQ"], 0.99, na.rm = TRUE) # Is now set as the tipping point from the above elbow plot
-gen_cov_thres <- 10
+gen_cov_thres <- 25
 len_thres <- 1.1
 
 # Count how many will be filtered by this 
@@ -786,25 +787,18 @@ ggplot(plot_data, aes(x = contigs, y = scaffold_n50)) +
 
 ```{r}
 
-target_groups <- c(
-  "Metazoa", "Fungi", "Choanoflagellates", "Nucleariids",
-  "Tubulinea", "Discosea", "Mycetozoa",
-  "Archaeplastida", "Chloroplastida", "Rhodophyta", "Glaucophyta",
-  "Diatoms", "Brown algae", "Oomycetes",
-  "Ciliates", "Dinoflagellates", "Apicomplexans",
-  "Foraminifera", "Radiolarians", "Cercozoans",
-  "Euglenozoa", "Fornicata", "Parabasalia", "Heterolobosea",
-  "Collodictyonids", "Rigifilida", "Mantamonas",
-  "Haptophytes", "Cryptophytes", "Hemimastigophora", "Ancyromonads"
-)
-# 
-filtered_data <- wgs_euks3_assemblies %>%
-  filter(
-    (is.na(genome_coverage) | genome_coverage >= gen_cov_thres) &
-    (is.na(scaffold_n50) | scaffold_n50 >= scaf_thres) &
-    (is.na(contigs) | contigs <= con_thres) &
-      (is.na(len_ratio)         | len_ratio <= len_thres)
-  )
+# target_groups <- c(
+#   "Metazoa", "Fungi", "Choanoflagellates", "Nucleariids",
+#   "Tubulinea", "Discosea", "Mycetozoa",
+#   "Archaeplastida", "Chloroplastida", "Rhodophyta", "Glaucophyta",
+#   "Diatoms", "Brown algae", "Oomycetes",
+#   "Ciliates", "Dinoflagellates", "Apicomplexans",
+#   "Foraminifera", "Radiolarians", "Cercozoans",
+#   "Euglenozoa", "Fornicata", "Parabasalia", "Heterolobosea",
+#   "Collodictyonids", "Rigifilida", "Mantamonas",
+#   "Haptophytes", "Cryptophytes", "Hemimastigophora", "Ancyromonads"
+# )
+
 
 filtered_data_large <- wgs_euks3 %>%
   filter(
@@ -815,7 +809,7 @@ filtered_data_large <- wgs_euks3 %>%
   )
 # 
 library(stringr)
-filtered_data <- filtered_data %>%
+filtered_data <- filtered_data_large %>%
   mutate(
     matched_group = str_extract(taxonomic_path, str_c(target_groups, collapse = "|"))
   ) %>%
@@ -828,24 +822,6 @@ library(ggplot2)
 # Step 1: Add a filtered-in flag according to the filtering criteria
 "Keep genomes that have good enough coverage (≥10), are not too fragmented, and don’t have an absurd number of contigs — but allow missing values. But also, don't take out any organelle genomes"
 
-# wgs_euks3_flagged_large <- wgs_euks3 %>%
-#   mutate(
-#     keep = (
-#       (is.na(genome_coverage) | genome_coverage >= gen_cov_thres) &
-#       (is.na(scaffold_n50) | scaffold_n50 >= scaf_thres) &
-#       (is.na(contigs) | contigs <= con_thres) &
-#       (is.na(len_ratio) | len_ratio <= len_thres)
-#     )
-#   )
-# wgs_euks3_flagged <- wgs_euks3_assemblies %>%
-#   mutate(
-#     keep = (
-#       (is.na(genome_coverage) | genome_coverage >= gen_cov_thres) &
-#       (is.na(scaffold_n50) | scaffold_n50 >= scaf_thres) &
-#       (is.na(contigs) | contigs <= con_thres) &
-#       (is.na(len_ratio) | len_ratio <= len_thres)
-#     )
-#   )
 
 org_whitelist <- c("Mitochondrion", "Chloroplast", "Apicoplast", "Plastid")
 
@@ -867,31 +843,6 @@ wgs_euks3_flagged_large <- wgs_euks3 %>%
       TRUE ~ FALSE
     )
   )
-
-wgs_euks3_flagged <- wgs_euks3_assemblies %>%
-  mutate(
-    keep = case_when(
-      organelle_description %in% org_whitelist ~ TRUE,
-      is.na(organelle_description) | organelle_description == "Chromosome" ~
-        (is.na(genome_coverage) | genome_coverage >= gen_cov_thres) &
-        (is.na(scaffold_n50)    | scaffold_n50    >= scaf_thres)    &
-        (is.na(contigs)         | contigs         <= con_thres)     &
-        (is.na(len_ratio)       | len_ratio       <= len_thres),
-      TRUE ~ FALSE
-    )
-  )
-
-
-
-# so_wgs_euks2_subset_flagged <- so_wgs_euks2_subset %>%
-#     mutate(
-#     keep = (
-#       (is.na(genome_coverage) | genome_coverage >= gen_cov_thres) &
-#       (is.na(scaffold_n50) | scaffold_n50 > scaf_thres) &
-#       (is.na(contigs) | contigs < con_thres) &
-#       (is.na(len_ratio) | len_ratio < len_thres)
-#     )
-#   )
 
 
 library(purrr)
@@ -926,17 +877,10 @@ library(patchwork)
 
 library(scales)
 library(forcats)
-# wgs_euks3_flagged_distinct <- wgs_euks3_flagged %>%
-#   distinct(assembly_accession) %>%
-#   arrange(assembly_accession)    # optional, but nice for reproducibility
-# 
-# so_wgs_euks2_distinct <- so_wgs_euks2_subset %>%
-#   distinct(assembly_accession) %>%
-#   arrange(assembly_accession)    # optional, but nice for reproducibility
 
   
 # Step 1: Split taxonomic path and trim
-wgs_euks3_flagged_split <- wgs_euks3_flagged %>%
+wgs_euks3_flagged_split <- wgs_euks3_flagged_large %>%
   separate(
     taxonomic_path,
     into = paste0("rank", 1:7),
@@ -949,7 +893,7 @@ wgs_euks3_flagged_split <- wgs_euks3_flagged %>%
 wgs_euks3_flagged_split <- wgs_euks3_flagged_split %>%
   filter(rank4 != "Primates")
 
-so_wgs_euks3_split <- so_wgs_euks2_subset %>%
+so_wgs_euks3_split <- so_wgs_euks2_slim_subset %>%
   separate(
     taxonomic_path,
     into = paste0("rank", 1:7),
@@ -979,6 +923,8 @@ ggplot(remove_data, aes(x = rank2, y = n, fill = assembly_level)) +
 ```
 
 ```{r}
+
+
 # lets have a more in depth look at who is removed of genbank genomes
 genbank_remove <- wgs_euks3_flagged_split %>% filter(source_db == "GENBANK", keep == "FALSE")
 genbank_keep <- wgs_euks3_flagged_split %>% filter(source_db == "GENBANK", keep == "TRUE")
@@ -990,10 +936,13 @@ refseq_keep <- wgs_euks3_flagged_split %>% filter(source_db == "REFSEQ", keep ==
 # # lets have a more in depth look at who is removed of genbank and refseq genomes
 all_remove <- wgs_euks3_flagged_split %>% filter(source_db == "GENBANK" | source_db == "REFSEQ", keep == "FALSE")
 all_keep <- wgs_euks3_flagged_split %>% filter(source_db == "GENBANK" | source_db == "REFSEQ", keep == "TRUE")
+
+
+# all_keep_final <- bind_rows(all_keep, so_wgs_euks3_split)
 ```
 
 ```{r}
-# so_all_keep <- so_wgs_euks2_subset %>% filter(source_db == "GENBANK" | source_db == "REFSEQ")
+# so_all_keep <- so_wgs_euks2_slim_subset %>% filter(source_db == "GENBANK" | source_db == "REFSEQ")
 
 write.csv(all_remove, file = "removed_genomes_nocontig.csv")
 write.csv(all_keep, file = "kept_genomes_nocontig.csv")
@@ -1004,24 +953,24 @@ write.csv(so_wgs_euks3_split, file = "so_kept_genomes.csv")
 ### reviewing all_keep amounts, trying to reduce size of kept_genomes_nocontig.csv?
 #
 
-skinny_all_keep <- all_keep %>%
+skinny_all_keep <- all_keep_final %>%
   distinct(assembly_accession, tax_id)
-nrow(all_keep) - nrow(skinny_all_keep)
+#nrow(all_keep) - nrow(skinny_all_keep)
 
 #see taxonomic representation unique species
-test_skinny_all_keep <- all_keep %>%
+test_skinny_all_keep <- all_keep_final %>%
    distinct(tax_id)
 nrow(test_skinny_all_keep)
-str(test_skinny_all_keep)
+#str(test_skinny_all_keep)
 
 # what is amount of 
-test_taxid_assembly_all_keep <- all_keep %>%
+test_taxid_assembly_all_keep <- all_keep_final %>%
    distinct(tax_id, assembly_level)
 nrow(test_skinny_all_keep)
-str(test_skinny_all_keep)
+#str(test_skinny_all_keep)
 
 # what is amount of 
-test_organelle_assembly_all_keep <- all_keep %>%
+test_organelle_assembly_all_keep <- all_keep_final %>%
    distinct(tax_id, organelle_description)
 nrow(test_skinny_all_keep)
 
@@ -1037,7 +986,7 @@ library(dplyr)
 library(readr)  # for write_csv()
 
 # 1) Combine the two tables row-wise
-merged_tbl <- bind_rows(all_keep,so_wgs_euks3_split)
+merged_tbl <- bind_rows(all_keep,so_wgs_euks2_slim_subset)
 
 # 2) Pull unique assembly accessions
 assembly_ids <- merged_tbl %>%
@@ -1046,10 +995,10 @@ assembly_ids <- merged_tbl %>%
 
 
 # 3) Write to CSV (one column named 'assembly_accession')
-write_csv(assembly_ids, "assembly_accessions_nocontig.csv")
+write_csv(assembly_ids, "assembly_accessions_nocontig_SLIM.csv")
 
 # If you want a plain text file with one accession per line:
-write_lines(assembly_ids$assembly_accession, "assembly_accessions_nocontig.txt")
+write_lines(assembly_ids$assembly_accession, "assembly_accessions_SLIM_nocontig.txt")
 # how many are iridian genomes
 # table(genbank_keep$is_SO)
 # table(refseq_keep$is_SO)
@@ -1079,7 +1028,7 @@ assign_db_group <- function(rank2, rank3) {
 accessions_with_groups <- merged_tbl %>%
   mutate(db_group = assign_db_group(rank2, rank3)) %>%
   distinct(assembly_accession, db_group, rank2, rank3, rank4, rank5, rank6) %>%
-  arrange(db_group, assembly_accession)
+  arrange(db_group, tax_id)
 
 # Check distribution
 accessions_with_groups %>%
@@ -1104,19 +1053,19 @@ message("Done. Per-group accession lists written.")
 ```{r scatter-contigs-n50-adding-iridians, echo=TRUE}
 # Contigs vs Scaffold N50 with iridians
 
-ggplot(genbank_keep, aes(x = contigs, y = scaffold_n50, shape = is_SO)) +
-  geom_point(alpha = 0.7) +
-  facet_wrap(~ source_db) +
-  labs(
-    title = "Highlighting Southern Ocean Genomes",
-    x = "Number of Contigs",
-    y = "Scaffold N50",
-    shape = "SO Genome"
-  ) +
-  scale_shape_manual(values = c("FALSE" = 16, "TRUE" = 17)) +
-  scale_x_continuous(labels = scales::label_comma()) +
-  theme_minimal() +
-  gghighlight(is_SO == TRUE, use_direct_label = FALSE)
+# ggplot(genbank_keep, aes(x = contigs, y = scaffold_n50, shape = is_SO)) +
+#   geom_point(alpha = 0.7) +
+#   facet_wrap(~ source_db) +
+#   labs(
+#     title = "Highlighting Southern Ocean Genomes",
+#     x = "Number of Contigs",
+#     y = "Scaffold N50",
+#     shape = "SO Genome"
+#   ) +
+#   scale_shape_manual(values = c("FALSE" = 16, "TRUE" = 17)) +
+#   scale_x_continuous(labels = scales::label_comma()) +
+#   theme_minimal() +
+#   gghighlight(is_SO == TRUE, use_direct_label = FALSE)
 ```
 
 ```{r scatter-contigs-n50-animals, echo=TRUE}

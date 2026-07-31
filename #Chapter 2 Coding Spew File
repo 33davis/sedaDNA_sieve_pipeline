@@ -3801,3 +3801,12 @@ bowtie2-build \
 
 ### increase whitelist and try to also reduce downstream #### 
 
+in order to the whitelist code to work (all R based) it needs to run on rosalind. In order to get packages installed correctly to work as submitted job, need to install the packages before launching
+
+1) start interactive job (qsub -I)
+2) module load R/4.4.1-gfbf-2023b
+3) type "R" to intial interactive cli R session
+4) use install.packages("package_name") here
+5) after downloads, use q() to quit cli session
+6) type "y" to save changes to your personal rosalind R desktop
+7) now can run R scripts where you just have "library(package_name)" because it's been installed into your local R image, which is what is pulled up during the thing. 
