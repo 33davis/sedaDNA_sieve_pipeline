@@ -30,6 +30,7 @@
 # REQUIREMENTS (same as RAMS pipeline; skip if already set up):
 #   conda install -c bioconda taxonkit
 #   wget https://ftp.ncbi.nih.gov/pub/taxonomy/taxdump.tar.gz
+#   in my conda envs this is mikkel_*** environment
 #   tar -zxvf taxdump.tar.gz
 #   mkdir -p $HOME/.taxonkit
 #   cp names.dmp nodes.dmp delnodes.dmp merged.dmp $HOME/.taxonkit/
