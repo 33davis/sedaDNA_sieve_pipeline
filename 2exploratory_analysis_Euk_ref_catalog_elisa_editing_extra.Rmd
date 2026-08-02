@@ -22,14 +22,14 @@ library(stringr)
 
 ```{r load-data, echo=TRUE}
 # Load the metadata file containing eukaryotic genome assemblies
-wgs_euks <- read_delim("/Users/davisee/OneDrive - University of Tasmania/Documents/chapter2/raw data/eukaryote_master_database.tsv",
-                       delim = "\t", escape_double = FALSE, trim_ws = TRUE)
 
-so_RAMS_list <- read_delim("C:/Users/davisee/OneDrive - University of Tasmania/Documents/chapter2/raw data/RAMS_alleukaryote_taxlist_20260224/WoRMS_RAMS_2026-02-01/RAMS_SO_whitelist_complete.tsv", 
-                           delim = "\t", escape_double = FALSE, trim_ws = TRUE)
+wgs_euks <- read_delim("../Database_Construction/eukaryote_download_database.tsv", delim = "\t", escape_double = FALSE, trim_ws = TRUE)
+
+so_RAMS_list <- read_csv("../Database_Construction/RAMS_alleukaryote_taxlist_20260224/WoRMS_RAMS_2026-02-01/SO_combined_RAMS_algae_lineage_greenlist.csv")
+
 clean_SO_RAMS_list <- so_RAMS_list %>%
   filter(!is.na(tax_id))
-so_genomes <- clean_SO_RAMS_list[,2]
+so_genomes <- clean_SO_RAMS_list[,3]
 colnames(so_genomes) <- c("tax_id")
 
 
@@ -88,7 +88,7 @@ wgs_euks$tax_id <- as.character(wgs_euks$tax_id)
 
 ```{r join tables, echo=TRUE}
 
-taxon_paths <- read_tsv("/Users/davisee/OneDrive - University of Tasmania/Documents/chapter2/raw data/taxon_paths.tsv", 
+taxon_paths <- read_tsv("/Users/davisee/OneDrive - University of Tasmania/Documents/chapter2/Database_Construction/taxon_paths.tsv", 
     col_names = c("tax_id", "taxonomic_path"),
     trim_ws = TRUE,
     col_types = cols(tax_id = col_character(),
@@ -182,13 +182,13 @@ ggplot(aes(x = source_db, fill = organelle_description)) +
 #Let's review rarer organelle types to see if they would be good to keep in or not
 unique(wgs_euks2$organelle_description)
 #if I do filter, and it will be good to, would need to filter it by organelle_sequence_length, not ungapped_sequence_legnth & gapped_sequence_length
-apico <- wgs_euks2 %>% filter(organelle_description=="Apicoplast") #apicoplasts might be good to keep bc pathogenitic groups, with cutoff 25,000 bp for organelle length
-chloro <- wgs_euks2 %>% filter(organelle_description=="Chloroplast")
-plast <- wgs_euks2 %>% filter(organelle_description=="Plastid") # also use 100,000 bp cutoff 
-what <- wgs_euks2 %>% filter(organelle_description=="Mitochondrial Plasmid") #agricultural plasmid samples, REMOVE
-misc <- wgs_euks2 %>% filter(organelle_description=="Mitochondrial Miscellaneous") # just four castor oil plant samples, REMOVE
-mito <- wgs_euks2 %>% filter(organelle_description=="Mitochondrion")
-chromo <- wgs_euks2 %>% filter(organelle_description == "Chromosome" | is.na(organelle_description))
+# apico <- wgs_euks2 %>% filter(organelle_description=="Apicoplast") #apicoplasts might be good to keep bc pathogenitic groups, with cutoff 25,000 bp for organelle length
+# chloro <- wgs_euks2 %>% filter(organelle_description=="Chloroplast")
+# plast <- wgs_euks2 %>% filter(organelle_description=="Plastid") # also use 100,000 bp cutoff 
+# what <- wgs_euks2 %>% filter(organelle_description=="Mitochondrial Plasmid") #agricultural plasmid samples, REMOVE
+# misc <- wgs_euks2 %>% filter(organelle_description=="Mitochondrial Miscellaneous") # just four castor oil plant samples, REMOVE
+# mito <- wgs_euks2 %>% filter(organelle_description=="Mitochondrion")
+# chromo <- wgs_euks2 %>% filter(organelle_description == "Chromosome" | is.na(organelle_description))
 # #remove the miscelleanous and mitochondrial plasmid after checking 
 wgs_euks2 <- wgs_euks2 %>% 
   filter(!organelle_description %in% c("Mitochondrial Plasmid",
