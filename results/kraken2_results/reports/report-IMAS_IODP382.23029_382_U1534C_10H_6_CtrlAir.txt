@@ -1,0 +1,47 @@
+ 95.67	442	442	U	0	unclassified
+  4.33	20	0	R	1	root
+  4.33	20	0	R1	131567	  cellular organisms
+  4.33	20	0	R2	2	    Bacteria
+  3.90	18	0	K	3379134	      Pseudomonadati
+  3.90	18	1	P	1224	        Pseudomonadota
+  2.60	12	0	C	28216	          Betaproteobacteria
+  2.60	12	0	O	80840	            Burkholderiales
+  2.60	12	1	F	119060	              Burkholderiaceae
+  2.38	11	1	G	32008	                Burkholderia
+  1.95	9	0	G1	2613784	                  unclassified Burkholderia
+  1.95	9	9	S	36773	                    Burkholderia sp.
+  0.22	1	1	G1	87882	                  Burkholderia cepacia complex
+  0.43	2	0	C	1236	          Gammaproteobacteria
+  0.22	1	0	O	72274	            Pseudomonadales
+  0.22	1	1	F	135621	              Pseudomonadaceae
+  0.22	1	0	O	135614	            Lysobacterales
+  0.22	1	0	F	32033	              Lysobacteraceae
+  0.22	1	1	G	40323	                Stenotrophomonas
+  0.43	2	0	C	28211	          Alphaproteobacteria
+  0.22	1	0	O	204455	            Rhodobacterales
+  0.22	1	0	F	31989	              Paracoccaceae
+  0.22	1	0	G	2804673	                Cypionkella
+  0.22	1	1	S	1678131	                  Cypionkella psychrotolerans
+  0.22	1	0	O	204457	            Sphingomonadales
+  0.22	1	0	F	41297	              Sphingomonadaceae
+  0.22	1	0	G	13687	                Sphingomonas
+  0.22	1	0	G1	196159	                  unclassified Sphingomonas
+  0.22	1	1	S	2502186	                    Sphingomonas sp. 1F27F7B
+  0.22	1	0	C	2008785	          Hydrogenophilia
+  0.22	1	0	O	119069	            Hydrogenophilales
+  0.22	1	0	F	206349	              Hydrogenophilaceae
+  0.22	1	0	G	70774	                Hydrogenophilus
+  0.22	1	1	S	297	                  Hydrogenophilus thermoluteolus
+  0.43	2	0	K	1783272	      Bacillati
+  0.22	1	0	P	1239	        Bacillota
+  0.22	1	0	C	91061	          Bacilli
+  0.22	1	0	O	1385	            Bacillales
+  0.22	1	0	F	3120669	              Anoxybacillaceae
+  0.22	1	0	G	129337	                Geobacillus
+  0.22	1	1	S	1921421	                  Geobacillus genomosp. 3
+  0.22	1	0	P	201174	        Actinomycetota
+  0.22	1	0	C	1760	          Actinomycetes
+  0.22	1	0	O	85006	            Micrococcales
+  0.22	1	0	F	1268	              Micrococcaceae
+  0.22	1	0	G	1663	                Arthrobacter
+  0.22	1	1	S	172040	                  Arthrobacter russicus

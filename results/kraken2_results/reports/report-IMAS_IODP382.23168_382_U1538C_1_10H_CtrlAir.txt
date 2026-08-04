@@ -1,0 +1,52 @@
+ 98.81	1738	1738	U	0	unclassified
+  1.19	21	0	R	1	root
+  1.19	21	0	R1	131567	  cellular organisms
+  1.19	21	9	R2	2	    Bacteria
+  0.40	7	1	K	3379134	      Pseudomonadati
+  0.28	5	1	P	1224	        Pseudomonadota
+  0.11	2	1	C	28211	          Alphaproteobacteria
+  0.06	1	0	O	204457	            Sphingomonadales
+  0.06	1	0	F	41297	              Sphingomonadaceae
+  0.06	1	0	G	165696	                Novosphingobium
+  0.06	1	0	G1	2644732	                  unclassified Novosphingobium
+  0.06	1	1	S	2849500	                    Novosphingobium sp. G106
+  0.06	1	0	C	1236	          Gammaproteobacteria
+  0.06	1	1	O	3060226	            Steroidobacterales
+  0.06	1	0	C	28216	          Betaproteobacteria
+  0.06	1	0	O	80840	            Burkholderiales
+  0.06	1	0	F	75682	              Oxalobacteraceae
+  0.06	1	0	G	1344552	                Noviherbaspirillum
+  0.06	1	0	G1	1636080	                  environmental samples
+  0.06	1	1	S	1636081	                    uncultured Noviherbaspirillum sp.
+  0.06	1	0	K1	1783270	        FCB group
+  0.06	1	0	K2	68336	          Bacteroidota/Chlorobiota group
+  0.06	1	0	P	976	            Bacteroidota
+  0.06	1	0	P1	50742	              environmental samples
+  0.06	1	1	S	152509	                uncultured Bacteroidota bacterium
+  0.28	5	1	K	1783272	      Bacillati
+  0.11	2	0	P	201174	        Actinomycetota
+  0.11	2	0	C	1760	          Actinomycetes
+  0.06	1	0	O	85006	            Micrococcales
+  0.06	1	0	F	85023	              Microbacteriaceae
+  0.06	1	0	G	33882	                Microbacterium
+  0.06	1	0	G1	2609290	                  unclassified Microbacterium
+  0.06	1	1	S	2992759	                    Microbacterium sp. C7(2022)
+  0.06	1	0	O	85009	            Propionibacteriales
+  0.06	1	0	F	31957	              Propionibacteriaceae
+  0.06	1	0	G	33983	                Luteococcus
+  0.06	1	1	S	33984	                  Luteococcus japonicus
+  0.06	1	0	P	1239	        Bacillota
+  0.06	1	0	C	91061	          Bacilli
+  0.06	1	0	O	1385	            Bacillales
+  0.06	1	0	F	3120669	              Anoxybacillaceae
+  0.06	1	0	G	129337	                Geobacillus
+  0.06	1	1	S	1921421	                  Geobacillus genomosp. 3
+  0.06	1	0	K1	1798711	        Cyanobacteriota/Melainabacteria group
+  0.06	1	0	P	1117	          Cyanobacteriota
+  0.06	1	0	C	3028117	            Cyanophyceae
+  0.06	1	0	O	3079749	              Leptolyngbyales
+  0.06	1	0	F	1890438	                Leptolyngbyaceae
+  0.06	1	0	F1	3081713	                  Leptolyngbya group
+  0.06	1	0	G	47251	                    Leptolyngbya
+  0.06	1	0	G1	2650499	                      unclassified Leptolyngbya
+  0.06	1	1	S	47254	                        Leptolyngbya sp.

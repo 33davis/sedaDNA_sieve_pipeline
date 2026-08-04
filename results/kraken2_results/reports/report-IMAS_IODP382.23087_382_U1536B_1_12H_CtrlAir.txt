@@ -1,0 +1,39 @@
+ 94.57	174	174	U	0	unclassified
+  5.43	10	0	R	1	root
+  5.43	10	0	R1	131567	  cellular organisms
+  5.43	10	0	R2	2	    Bacteria
+  3.80	7	0	K	3379134	      Pseudomonadati
+  3.26	6	2	P	1224	        Pseudomonadota
+  1.63	3	0	C	28216	          Betaproteobacteria
+  1.63	3	0	O	80840	            Burkholderiales
+  1.09	2	0	F	75682	              Oxalobacteraceae
+  1.09	2	0	F1	2895353	                Telluria group
+  1.09	2	0	G	149698	                  Massilia
+  0.54	1	1	S	3081751	                    Massilia luteola
+  0.54	1	1	S	2784389	                    Massilia rhizosphaerae
+  0.54	1	0	O1	80841	              unclassified Burkholderiales
+  0.54	1	1	S	1891238	                Burkholderiales bacterium
+  0.54	1	0	P1	81684	          unclassified Pseudomonadota
+  0.54	1	1	S	1977087	            Pseudomonadota bacterium
+  0.54	1	0	K1	1783270	        FCB group
+  0.54	1	0	K2	68336	          Bacteroidota/Chlorobiota group
+  0.54	1	0	P	976	            Bacteroidota
+  0.54	1	0	C	1853228	              Chitinophagia
+  0.54	1	0	O	1853229	                Chitinophagales
+  0.54	1	0	F	563835	                  Chitinophagaceae
+  0.54	1	0	G	354354	                    Niastella
+  0.54	1	1	S	2569763	                      Niastella caeni
+  1.63	3	0	K	1783272	      Bacillati
+  1.63	3	0	P	1239	        Bacillota
+  1.63	3	0	C	186801	          Clostridia
+  1.09	2	0	O	3085636	            Lachnospirales
+  1.09	2	0	F	186803	              Lachnospiraceae
+  0.54	1	0	F1	189703	                environmental samples
+  0.54	1	1	S	297314	                  uncultured Lachnospiraceae bacterium
+  0.54	1	0	F1	186928	                unclassified Lachnospiraceae
+  0.54	1	1	S	1898203	                  Lachnospiraceae bacterium
+  0.54	1	0	O	3082768	            Christensenellales
+  0.54	1	0	F	990719	              Christensenellaceae
+  0.54	1	0	G	990721	                Christensenella
+  0.54	1	0	G1	1545741	                  environmental samples
+  0.54	1	1	S	1545742	                    uncultured Christensenella sp.

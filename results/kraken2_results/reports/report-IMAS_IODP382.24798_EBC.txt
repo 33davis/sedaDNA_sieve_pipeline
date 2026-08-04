@@ -1,0 +1,6 @@
+ 99.60	249	249	U	0	unclassified
+  0.40	1	0	R	1	root
+  0.40	1	0	R1	131567	  cellular organisms
+  0.40	1	0	R2	2	    Bacteria
+  0.40	1	0	R3	49928	      unclassified Bacteria
+  0.40	1	1	S	1869227	        bacterium
