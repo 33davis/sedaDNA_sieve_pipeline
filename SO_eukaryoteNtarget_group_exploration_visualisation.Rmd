@@ -1,0 +1,253 @@
+---
+title: "Southern Ocean eukaryote and target groups exploration and visualisation"
+author: "Elisa Davis"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.width = 8, fig.height = 5)
+library(readr)
+library(ggplot2)
+library(gghighlight)
+library(scales)
+library(tidyverse)
+library(dplyr)
+library(inflection)
+library(scales)
+library(stringr)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r load-data, echo=TRUE}
+so_RAMS_list <- read_csv("C:/Users/davisee/OneDrive - University of Tasmania/Documents/chapter2/SO_curated_Database_Construction/RAMS_alleukaryote_taxlist_20260224/WoRMS_RAMS_2026-02-01/SO_combined_RAMS_algae_lineage_greenlist.csv", trim_ws = TRUE)
+#SO_theme_groupss <- so_RAMS_list[,12-13]
+clean_SO_RAMS_list <- so_RAMS_list %>%
+  filter(!is.na(tax_id))
+so_genomes <- clean_SO_RAMS_list[,3]
+colnames(so_genomes) <- c("tax_id")
+#check for any NA values --> artefacts from merging processes
+unique(is.na(row.names(so_genomes)))
+
+```
+
+```{r rams-taxonomy-exploration, echo=TRUE}
+# Exploratory summary of phylum/class diversity in RAMS SO greenlist
+# Run this first to inform target group binning decisions
+
+so_RAMS_list %>%
+  distinct(tax_id, phylum, class) %>%
+  count(phylum, class) %>%
+  arrange(desc(n)) %>%
+  print(n = Inf)
+
+so_RAMS_list %>%
+  distinct(tax_id, phylum, class, order) %>%
+  count(phylum, class, order) %>%
+  arrange(desc(n)) %>%
+  print(n = Inf)
+
+
+# Exploratory summary of phylum/class/family diversity in RAMS SO greenlist
+# Run this first to inform target group binning decisions --> 
+
+so_RAMS_list %>%
+  distinct(tax_id, phylum, class, order, family) %>%
+  count(phylum, class, order, family) %>%
+  arrange(desc(n)) %>%
+  print(n = Inf)
+
+```
+
+```{r rams-target-groups, echo=TRUE}
+# Assign target groups based on phylum and class
+# Ecologically important SO groups kept separate, remainder collapsed
+
+so_RAMS_list <- so_RAMS_list %>%
+  mutate(
+    theme_groups = case_when(
+      # Vertebrates
+      phylum == "Chordata" & class %in% c("Actinopteri",
+                                           "Chondrichthyes",
+                                           "Hyperoartia",
+                                           "Myxini")            ~ "Fish",
+      phylum == "Chordata" & class == "Mammalia"                 ~ "Mammalia",
+      phylum == "Chordata" & class == "Aves"                     ~ "Birds",
+      phylum == "Chordata" & class %in% c("Ascidiacea",
+                                           "Thaliacea",
+                                           "Appendicularia")     ~ "Tunicata",
+      phylum == "Chordata"                                        ~ "Chordata_Other",
+
+      # Major SO invertebrate phyla
+      phylum == "Arthropoda" & class %in% c("Malacostraca",
+                                           	"Ostracoda", 
+                                           "Hexactinellida",
+                                           "Thecostraca",
+                                           "Hexanauplia") ~ "Crustaceans_Arthropoda",
+      phylum == "Arthropoda" & class =="Pycnogonida"  ~ "SeaSpiders_Arthropoda",
+      phylum == "Mollusca"                                        ~ "Mollusca",
+      phylum == "Echinodermata"                                   ~ "Echinodermata",
+      phylum == "Annelida"                                        ~ "Annelida",
+      phylum == "Porifera"                                        ~ "Porifera",
+      phylum == "Cnidaria"                                        ~ "Cnidaria",
+      phylum == "Bryozoa"                                         ~ "Bryozoa",
+      phylum == "Nematoda"                                        ~ "Nematoda",
+      phylum == "Platyhelminthes"                                 ~ "Platyhelminthes",
+
+      # Important SO protist groups
+      phylum == "Foraminifera"                                    ~ "Foraminifera",
+      phylum == "Bacillariophyta"                                 ~ "Diatoms",
+      phylum == "Ciliophora"                                      ~ "Ciliophora",
+
+      # Smaller but real SO groups collapsed
+      phylum %in% c("Chaetognatha", "Brachiopoda", "Nemertea",
+                    "Kinorhyncha", "Acanthocephala",
+                    "Ctenophora", "Hemichordata")                 ~ "Minor_Invertebrates",
+
+      # Fungi and plants
+      phylum %in% c("Ascomycota", "Basidiomycota")               ~ "Fungi",
+      phylum %in% c("Streptophyta", "Rhodophyta","Haptophyta", "Chlorophyta")           ~ "Plants_Algae",
+
+      TRUE                                                        ~ "Other"
+    )
+  )
+
+cat("RAMS target group breakdown:\n")
+print(table(so_RAMS_list$theme_groups, useNA = "always"))
+```
+
+```{r rams-target-groups-barplot, echo=TRUE}
+# Bar chart — unique taxa per target group
+
+so_RAMS_list %>%
+  distinct(tax_id, theme_groups) %>%
+  count(theme_groups, name = "n") %>%
+  mutate(theme_groups = fct_reorder(theme_groups, n)) %>%
+  ggplot(aes(x = theme_groups, y = n, fill = theme_groups)) +
+    geom_col(show.legend = FALSE) +
+    geom_text(aes(label = n), hjust = -0.2, size = 3.5) +
+    coord_flip() +
+    labs(
+      title = "RAMS Southern Ocean Greenlist — Taxa per Target Group",
+      x     = "Target Group",
+      y     = "Number of Taxa"
+    ) +
+    theme_minimal() +
+    theme(axis.text.y = element_text(size = 10))
+```
+
+
+```{r rams-Family-barplot, echo=TRUE}
+# Bar chart — unique taxa per target group
+
+so_RAMS_list %>%
+  distinct(tax_id, order) %>%
+  count(order, name = "n") %>%
+  mutate(order = fct_reorder(order, n)) %>%
+  ggplot(aes(x = order, y = n, fill = order)) +
+    geom_col(show.legend = FALSE) +
+   # geom_text(aes(label = n), hjust = -0.2, size = 3.5) +
+    coord_flip() +
+    labs(
+      title = "RAMS Southern Ocean Greenlist — Taxa per Target Group",
+      x     = "Target Group",
+      y     = "Number of Taxa"
+    ) +
+    theme_minimal() +
+    theme(axis.text.y = element_text(size = 0))
+```
+
+```{r rams-target-groups-donut, echo=TRUE}
+# Donut chart — proportional composition of RAMS greenlist target groups
+
+rams_donut_data <- so_RAMS_list %>%
+  distinct(tax_id, theme_groups) %>%
+  count(theme_groups, name = "n") %>%
+  arrange(desc(n)) %>%
+  mutate(
+    pct          = n / sum(n),
+    theme_groups = fct_reorder(theme_groups, n),
+    label        = ifelse(
+      pct * 100 >= 2,
+      paste0(theme_groups, "\n", n,
+             " (", scales::percent(pct, accuracy = 0.1), ")"),
+      ""
+    )
+  )
+
+ggplot(rams_donut_data, aes(x = 2, y = n, fill = theme_groups)) +
+  geom_col(width = 1, color = "white") +
+  coord_polar(theta = "y") +
+  geom_text(
+    aes(x = 2.6, label = label),
+    position = position_stack(vjust = 0.5),
+    size = 3
+  ) +
+  xlim(0.5, 3.2) +
+  labs(title = "RAMS Southern Ocean greenlist — Target Group Composition") +
+  theme_void() +
+  theme(legend.position = "none",
+        plot.title = element_text(hjust = 0.5))
+```
+
+
+
+```{r rams-target-groups-stacked, echo=TRUE}
+# Stacked bar — class breakdown within each target group
+
+so_RAMS_list %>%
+  distinct(tax_id, theme_groups, order) %>%
+  count(theme_groups, order) %>%
+  mutate(theme_groups = fct_reorder(theme_groups, n, sum)) %>%
+  ggplot(aes(x = theme_groups, y = n, fill = order)) +
+    geom_col() +
+    coord_flip() +
+    labs(
+      title = "RAMS greenlist — Order Breakdown within Target Groups",
+      x     = "Target Group",
+      y     = "Number of Taxa",
+      fill  = "Class"
+    ) +
+    theme_minimal() +
+    theme(legend.position = "none",
+      axis.text.y     = element_text(size = 10),
+      legend.text     = element_text(size = 7),
+      legend.key.size = unit(0.4, "cm")
+    )
+
+### also look by family 
+so_RAMS_list %>%
+  distinct(tax_id, theme_groups, family) %>%
+  count(theme_groups, family) %>%
+  mutate(theme_groups = fct_reorder(theme_groups, n, sum)) %>%
+  ggplot(aes(x = theme_groups, y = n, fill = family)) +
+    geom_col() +
+    coord_flip() +
+    labs(
+      title = "RAMS greenlist — family Breakdown within Target Groups",
+      x     = "Target Group",
+      y     = "Number of Taxa",
+      fill  = "Class"
+    ) +
+    theme_minimal() +
+    theme(legend.position = "none",
+      axis.text.y     = element_text(size = 10),
+      legend.text     = element_text(size = 7),
+      legend.key.size = unit(0.4, "cm")
+    )
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
